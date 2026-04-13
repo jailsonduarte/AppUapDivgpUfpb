@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Processos | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .grid-form {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .full-width {
+            grid-column: span 3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-100);
+            font-weight: 700;
+            color: var(--ebserh-blue);
+            border-bottom: 2px solid var(--ebserh-blue);
+        }
+
+        tr:hover {
+            background: var(--gray-50);
+        }
+
+        .btn-delete-row {
+            background: var(--error);
+            color: white;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .grid-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Sistema de Registro de Processos</h1>
+                <p class="page-subtitle">Gestão e acompanhamento de processos administrativos</p>
+            </header>
+
+            <!-- Form Card -->
+            <div class="card">
+                <h2 class="card-header">Cadastro de Processo</h2>
+
+                <div class="grid-form">
+                    <div class="form-group">
+                        <label class="form-label">Nº do Processo</label>
+                        <input type="text" id="numProcesso" class="form-input" placeholder="000.000/2026">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nome do Interessado</label>
+                        <input type="text" id="interessado" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Matrícula</label>
+                        <input type="text" id="matricula" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data</label>
+                        <input type="date" id="data" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Unidade Disponível</label>
+                        <input type="text" id="unidade" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fase do Processo</label>
+                        <select id="fase" class="form-select">
+                            <option value="Não Iniciado">Não Iniciado</option>
+                            <option value="Iniciado">Iniciado</option>
+                            <option value="Triagem">Triagem</option>
+                            <option value="Análise">Análise</option>
+                            <option value="Despacho">Despacho</option>
+                            <option value="Concluído">Concluído</option>
+                            <option value="Arquivado">Arquivado</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Resumo do Processo</label>
+                        <textarea id="resumo" class="form-input" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="adicionarProcesso()">Registrar Processo</button>
+                    <button class="btn btn-secondary" onclick="limparCampos()">Limpar Campos</button>
+                    <button class="btn btn-success" onclick="salvarExcel()">Exportar Excel</button>
+                    <button class="btn btn-secondary" onclick="salvarCSV()">Exportar CSV</button>
+                    <button class="btn btn-danger" onclick="gerarPDF()">Gerar PDF</button>
+                </div>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card">
+                <h2 class="card-header">Processos Registrados</h2>
+
+                <div class="form-group">
+                    <input type="text" id="search" class="form-input" placeholder="Buscar na tabela..."
+                        onkeyup="renderizarTabela()">
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table id="tabelaProcessos">
+                        <thead>
+                            <tr>
+                                <th>Processo</th>
+                                <th>Interessado</th>
+                                <th>Matrícula</th>
+                                <th>Unidade</th>
+                                <th>Fase</th>
+                                <th>Data</th>
+                                <th>Resumo</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabela"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        let bancoProcessos = JSON.parse(localStorage.getItem('db_processos_v2')) || [];
+
+        window.onload = () => {
+            document.getElementById('data').valueAsDate = new Date();
+            renderizarTabela();
+        };
+
+        function adicionarProcesso() {
+            const p = {
+                id: Date.now(),
+                numero: document.getElementById('numProcesso').value,
+                interessado: document.getElementById('interessado').value,
+                matricula: document.getElementById('matricula').value,
+                data: document.getElementById('data').value,
+                unidade: document.getElementById('unidade').value,
+                fase: document.getElementById('fase').value,
+                resumo: document.getElementById('resumo').value
+            };
+
+            if (!p.numero || !p.interessado) return alert("Preencha Nº do Processo e Interessado.");
+
+            bancoProcessos.push(p);
+            salvarNoStorage();
+            renderizarTabela();
+            limparCampos();
+        }
+
+        function renderizarTabela() {
+            const corpo = document.getElementById('corpoTabela');
+            const busca = document.getElementById('search').value.toLowerCase();
+            corpo.innerHTML = "";
+
+            bancoProcessos.forEach((p, index) => {
+                if (p.interessado.toLowerCase().includes(busca) || p.numero.toLowerCase().includes(busca)) {
+                    const linha = `<tr>
+                        <td><b>${p.numero}</b></td>
+                        <td>${p.interessado}</td>
+                        <td>${p.matricula}</td>
+                        <td>${p.unidade}</td>
+                        <td>${p.fase}</td>
+                        <td>${p.data.split('-').reverse().join('/')}</td>
+                        <td>${p.resumo}</td>
+                        <td><button class="btn-delete-row" onclick="excluirIndividual(${p.id})">Excluir</button></td>
+                    </tr>`;
+                    corpo.innerHTML += linha;
+                }
+            });
+        }
+
+        function excluirIndividual(id) {
+            if (confirm("Deseja excluir este registro?")) {
+                bancoProcessos = bancoProcessos.filter(p => p.id !== id);
+                salvarNoStorage();
+                renderizarTabela();
+            }
+        }
+
+        function salvarNoStorage() {
+            localStorage.setItem('db_processos_v2', JSON.stringify(bancoProcessos));
+        }
+
+        function limparCampos() {
+            ['numProcesso', 'interessado', 'matricula', 'unidade', 'resumo'].forEach(id => {
+                document.getElementById(id).value = "";
+            });
+            document.getElementById('fase').selectedIndex = 0;
+            document.getElementById('data').valueAsDate = new Date();
+        }
+
+        function salvarExcel() {
+            if (bancoProcessos.length === 0) return alert("Nada para exportar.");
+            const dadosExport = bancoProcessos.map(({ id, ...rest }) => rest);
+            const worksheet = XLSX.utils.json_to_sheet(dadosExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Processos");
+            XLSX.writeFile(workbook, "Relatorio_Processos.xlsx");
+        }
+
+        function salvarCSV() {
+            if (bancoProcessos.length === 0) return alert("Nada para exportar.");
+
+            const cabecalhos = ["Processo", "Interessado", "Matrícula", "Data", "Unidade", "Fase", "Resumo"];
+            const csvRows = [cabecalhos.join(";")];
+
+            bancoProcessos.forEach(p => {
+                const row = [
+                    p.numero,
+                    p.interessado,
+                    p.matricula,
+                    p.data,
+                    p.unidade,
+                    p.fase,
+                    p.resumo.replace(/\n/g, " ")
+                ];
+                csvRows.push(row.join(";"));
+            });
+
+            const csvContent = "\uFEFF" + csvRows.join("\n");
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "Relatorio_Processos.csv";
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function gerarPDF() {
+            const elemento = document.querySelector('.card:last-child');
+            const btnExcluir = document.querySelectorAll('.btn-delete-row');
+            btnExcluir.forEach(b => b.style.display = 'none');
+
+            const opt = {
+                margin: 10,
+                filename: 'relatorio_processos.pdf',
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(elemento).save().then(() => {
+                btnExcluir.forEach(b => b.style.display = 'inline-block');
+            });
+        }
+    </script>
+</body>
+
+</html>

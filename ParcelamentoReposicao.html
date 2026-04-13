@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcelamento de Reposição | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .alert {
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-100);
+            font-weight: 700;
+            color: var(--ebserh-blue);
+        }
+
+        tr:hover {
+            background: var(--gray-50);
+        }
+
+        .option-title {
+            font-weight: 700;
+            color: var(--ebserh-accent);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Simulador de Parcelamento</h1>
+                <p class="page-subtitle">Cálculo de parcelamento de reposição ao erário</p>
+            </header>
+
+            <!-- Form Card -->
+            <div class="card">
+                <h2 class="card-header">Dados do Servidor</h2>
+
+                <form id="parcelamentoForm">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label class="form-label">Nome do Servidor</label>
+                            <input type="text" id="nome" class="form-input" placeholder="Nome completo">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Matrícula</label>
+                            <input type="text" id="matricula" class="form-input" placeholder="Ex: 123456">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Situação do Agente</label>
+                        <select id="situacao" class="form-select">
+                            <option value="ativo">Ativo (Desconto em Folha)</option>
+                            <option value="desligado">Desligado (Pagamento via GRU)</option>
+                            <option value="afastamento">Afastamento não remunerado (Pagamento via GRU)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Valor Total do Débito (R$)</label>
+                            <input type="number" id="debitoTotal" class="form-input" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Remuneração Líquida (R$)</label>
+                            <input type="number" id="remuneracao" class="form-input" min="0" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">Calcular Parcelamento</button>
+                </form>
+            </div>
+
+            <!-- Results -->
+            <div id="resultados" style="display: none;">
+                <div id="alertas"></div>
+
+                <div class="card">
+                    <h2 class="card-header">Opções Disponíveis</h2>
+
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Perfil</th>
+                                    <th>Valor Parcela</th>
+                                    <th>Qtd.</th>
+                                    <th>Meio de Pagamento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaParcelas"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <button id="gerarPDF" class="btn btn-success btn-lg btn-block" style="margin-top: 1.5rem;">
+                    Baixar Relatório (PDF)
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        const form = document.getElementById('parcelamentoForm');
+        const resultados = document.getElementById('resultados');
+        const alertas = document.getElementById('alertas');
+        const tabelaParcelas = document.getElementById('tabelaParcelas');
+        const btnPDF = document.getElementById('gerarPDF');
+
+        let dadosParaPDF = {};
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const nome = document.getElementById('nome').value.trim() || "Não informado";
+            const matricula = document.getElementById('matricula').value.trim() || "Não informado";
+            const situacao = document.getElementById('situacao').value;
+            const debitoTotal = parseFloat(document.getElementById('debitoTotal').value);
+            const remuneracao = parseFloat(document.getElementById('remuneracao').value);
+
+            alertas.innerHTML = '';
+            tabelaParcelas.innerHTML = '';
+            resultados.style.display = 'block';
+
+            const opcoes = [];
+            const valorMinimo = remuneracao * 0.10;
+
+            // 1. OPÇÃO: INTEGRAL
+            opcoes.push({
+                titulo: 'Integral (À vista)',
+                parcelas: Array(1).fill(debitoTotal),
+                meio: situacao === 'ativo' ? 'Desconto em Folha' : 'GRU Única'
+            });
+
+            // 2. OPÇÃO: PARCELAS IGUAIS
+            let qtdIguais = Math.floor(debitoTotal / valorMinimo);
+            if (qtdIguais > 1) {
+                const valorParcelaIgual = debitoTotal / qtdIguais;
+                opcoes.push({
+                    titulo: 'Parcelas Iguais (Sugestão)',
+                    parcelas: Array(qtdIguais).fill(valorParcelaIgual),
+                    meio: situacao === 'ativo' ? 'Desconto em Folha' : 'GRU Mensal'
+                });
+            }
+
+            // 3. OPÇÃO: 10% DO SALÁRIO
+            let saldo = debitoTotal;
+            let parcelas10 = [];
+            while (saldo > 0.01) {
+                if (saldo >= (valorMinimo - 0.01)) {
+                    parcelas10.push(valorMinimo);
+                    saldo -= valorMinimo;
+                } else {
+                    parcelas10.push(saldo);
+                    saldo = 0;
+                }
+            }
+
+            if (parcelas10.length > 1 && parcelas10.length !== qtdIguais) {
+                opcoes.push({
+                    titulo: 'Parcelamento (Máximo 10% - Última menor)',
+                    parcelas: parcelas10,
+                    meio: situacao === 'ativo' ? 'Desconto em Folha' : 'GRU Mensal'
+                });
+
+                // 4. OPÇÃO: PARCELAS IGUALADAS QUANDO A ÚLTIMA É MENOR
+                if (parcelas10[parcelas10.length - 1] < (valorMinimo - 0.01)) {
+                    const qtdParcelas = parcelas10.length;
+                    const valorIgual = debitoTotal / qtdParcelas;
+                    opcoes.push({
+                        titulo: `Parcelamento (${qtdParcelas}x iguais - Abaixo de 10%)`,
+                        parcelas: Array(qtdParcelas).fill(valorIgual),
+                        meio: situacao === 'ativo' ? 'Desconto em Folha' : 'GRU Mensal'
+                    });
+                }
+            }
+
+            // RENDERIZAÇÃO
+            opcoes.forEach(op => {
+                op.parcelas.forEach((valor, index) => {
+                    const tr = document.createElement('tr');
+
+                    let desc = op.parcelas.length === 1 ? 'Única' : `${index + 1}ª / ${op.parcelas.length}`;
+
+                    tr.innerHTML = `
+                    <td class="${index === 0 ? 'option-title' : ''}">${index === 0 ? op.titulo : ''}</td>
+                    <td>R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${desc}</td>
+                    <td style="font-size: 0.9rem; color: var(--gray-600);">${op.meio}</td>
+                `;
+                    tabelaParcelas.appendChild(tr);
+                });
+            });
+
+            // Avisos
+            if (situacao === 'ativo') {
+                alertas.innerHTML = `<div class="alert alert-info">
+                ℹ️ Desconto em folha respeitando a margem consignável mínima de 10% da remuneração.
+            </div>`;
+            } else {
+                alertas.innerHTML = `<div class="alert alert-warning">
+                ⚠️ O não pagamento da GRU pode gerar inscrição em Dívida Ativa e CADIN.
+            </div>`;
+            }
+
+            dadosParaPDF = { nome, matricula, debitoTotal, remuneracao, opcoes };
+        });
+
+        btnPDF.addEventListener('click', () => {
+            const { nome, matricula, debitoTotal, opcoes } = dadosParaPDF;
+            const doc = new jsPDF();
+
+            doc.setFontSize(14);
+            doc.text("SIMULAÇÃO DE REPOSIÇÃO AO ERÁRIO", 105, 15, { align: "center" });
+
+            doc.setFontSize(10);
+            doc.text(`Servidor: ${nome}`, 20, 30);
+            doc.text(`Matrícula: ${matricula}`, 20, 36);
+            doc.text(`Valor do Débito: R$ ${debitoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, 42);
+
+            let y = 55;
+            opcoes.forEach(op => {
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.setFont("helvetica", "bold");
+                doc.text(op.titulo, 20, y);
+                y += 6;
+                doc.setFont("helvetica", "normal");
+
+                const valorExemplo = op.parcelas[0].toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                if (op.parcelas.length > 1) {
+                    doc.text(`${op.parcelas.length} parcelas de R$ ${valorExemplo} (Meio: ${op.meio})`, 25, y);
+                    if (op.parcelas[0] !== op.parcelas[op.parcelas.length - 1]) {
+                        y += 5;
+                        doc.text(`* Última parcela reajustada para: R$ ${op.parcelas[op.parcelas.length - 1].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 25, y);
+                    }
+                } else {
+                    doc.text(`Parcela única de R$ ${valorExemplo} (Meio: ${op.meio})`, 25, y);
+                }
+                y += 10;
+            });
+
+            doc.save(`Simulacao_${matricula}.pdf`);
+        });
+    </script>
+</body>
+
+</html>

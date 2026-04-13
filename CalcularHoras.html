@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Horas | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .linha {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+
+        .linha input {
+            flex: 1;
+        }
+
+        .linha select {
+            width: 80px;
+        }
+
+        .btn-remove {
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora de Horas</h1>
+                <p class="page-subtitle">Soma e subtração de horas com exportação em PDF</p>
+            </header>
+
+            <!-- Soma de Horas -->
+            <div class="card">
+                <h2 class="card-header">Soma / Subtração de Horas</h2>
+
+                <div id="lista"></div>
+
+                <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem;">
+                    <button class="btn btn-success btn-sm" onclick="adicionarLinha()">+ Adicionar Linha</button>
+                    <button class="btn btn-primary btn-sm" onclick="somarHoras()">Calcular</button>
+                    <button class="btn btn-secondary btn-sm" onclick="gerarPDF()">📄 Salvar PDF</button>
+                    <button class="btn btn-danger btn-sm" onclick="limparTudo()">🧹 Limpar</button>
+                </div>
+
+                <div id="resultado" class="total-banner mt-4" style="display:none;">
+                    <span class="total-label">Resultado</span>
+                    <strong class="total-value" id="resultadoValor">00:00:00</strong>
+                </div>
+            </div>
+
+            <!-- Calculadora Aritmética -->
+            <div class="card mt-4">
+                <h2 class="card-header">Calculadora Aritmética</h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Valor 1</label>
+                        <input type="number" id="n1" class="form-input" placeholder="Valor 1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Operação</label>
+                        <select id="opCalc" class="form-select">
+                            <option value="+">+</option>
+                            <option value="-">-</option>
+                            <option value="*">×</option>
+                            <option value="/">÷</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Valor 2</label>
+                        <input type="number" id="n2" class="form-input" placeholder="Valor 2">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:0.75rem;">
+                    <button class="btn btn-primary" onclick="calcular()">Calcular</button>
+                    <button class="btn btn-secondary" onclick="limparCalc()">Limpar</button>
+                </div>
+
+                <div id="resultadoCalc" class="result-box mt-3" style="display:none;">
+                    <div class="result-title">Resultado</div>
+                    <div class="result-value" id="resultadoCalcValor"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        let contador = 0;
+        window.onload = () => adicionarLinha();
+
+        function adicionarLinha() {
+            contador++;
+            let div = document.createElement("div");
+            div.className = "linha";
+            div.id = "linha" + contador;
+
+            div.innerHTML = `
+            <select id="op${contador}" class="form-select" style="width:70px;">
+                <option value="plus">+</option>
+                <option value="minus">-</option>
+            </select>
+            <input type="number" id="h${contador}" class="form-input" placeholder="Horas">
+            <input type="number" id="m${contador}" class="form-input" placeholder="Min">
+            <input type="number" id="s${contador}" class="form-input" placeholder="Seg">
+            <button class="btn-remove" onclick="removerLinha(${contador})">✕</button>
+        `;
+            document.getElementById("lista").appendChild(div);
+        }
+
+        function removerLinha(id) { document.getElementById("linha" + id).remove(); }
+
+        function somarHoras() {
+            let totalSeg = 0;
+
+            for (let i = 1; i <= contador; i++) {
+                let linha = document.getElementById("linha" + i);
+                if (!linha) continue;
+
+                let op = document.getElementById(`op${i}`).value;
+                let h = parseInt(document.getElementById(`h${i}`).value) || 0;
+                let m = parseInt(document.getElementById(`m${i}`).value) || 0;
+                let s = parseInt(document.getElementById(`s${i}`).value) || 0;
+                let segundos = h * 3600 + m * 60 + s;
+
+                if (op === "plus") totalSeg += segundos;
+                else totalSeg -= segundos;
+            }
+
+            let sinal = totalSeg < 0 ? "-" : "";
+            totalSeg = Math.abs(totalSeg);
+
+            let horas = Math.floor(totalSeg / 3600);
+            let minutos = Math.floor((totalSeg % 3600) / 60);
+            let segundos = totalSeg % 60;
+
+            let resultado = `${sinal}${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+
+            document.getElementById("resultadoValor").innerText = resultado;
+            document.getElementById("resultado").style.display = "block";
+            return resultado;
+        }
+
+        function gerarPDF() {
+            let resultado = somarHoras();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho Ebserh
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Ebserh - Hospital Universitário Lauro Wanderley", 10, 15);
+            doc.setFontSize(14);
+            doc.text("Memória de Cálculo - Operações com Horas", 10, 22);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 10, 28);
+
+            let tableData = [];
+            for (let i = 1; i <= contador; i++) {
+                let linha = document.getElementById("linha" + i);
+                if (!linha) continue;
+                let op = document.getElementById(`op${i}`).value === "plus" ? "+" : "-";
+                let h = document.getElementById(`h${i}`).value || "00";
+                let m = document.getElementById(`m${i}`).value || "00";
+                let s = document.getElementById(`s${i}`).value || "00";
+                tableData.push([i, op, `${h.padStart(2, '0')}:${m.padStart(2, '0')}:${s.padStart(2, '0')}`]);
+            }
+
+            doc.autoTable({
+                startY: 35,
+                head: [['Item', 'Operação', 'Tempo (H:M:S)']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 82, 155] }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("RESULTADO FINAL: " + resultado, 10, finalY);
+
+            doc.save("calculo_horas.pdf");
+        }
+
+        function limparTudo() {
+            document.getElementById("lista").innerHTML = "";
+            contador = 0;
+            adicionarLinha();
+            document.getElementById("resultado").style.display = "none";
+        }
+
+        function calcular() {
+            let a = parseFloat(document.getElementById("n1").value) || 0;
+            let b = parseFloat(document.getElementById("n2").value) || 0;
+            let op = document.getElementById("opCalc").value;
+            let r = 0;
+
+            if (op === "+") r = a + b;
+            if (op === "-") r = a - b;
+            if (op === "*") r = a * b;
+            if (op === "/") r = b === 0 ? "Erro: divisão por zero" : a / b;
+
+            document.getElementById("resultadoCalcValor").innerText = "Resultado = " + r;
+            document.getElementById("resultadoCalc").style.display = "block";
+        }
+
+        function limparCalc() {
+            document.getElementById("n1").value = "";
+            document.getElementById("n2").value = "";
+            document.getElementById("resultadoCalc").style.display = "none";
+        }
+    </script>
+</body>
+
+</html>

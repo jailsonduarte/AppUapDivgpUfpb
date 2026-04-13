@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horas Extras 100% | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .info-box {
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border-left: 4px solid #d81b60;
+            margin-bottom: 1.5rem;
+        }
+
+        .rubric-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .rubric-table th {
+            background: var(--ebserh-blue);
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .rubric-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .formula-section {
+            background: var(--gray-100);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Adicional por Serv. Extraordinário – 100%</h1>
+                <p class="page-subtitle">Rubrica 00361 - Horas Extras CLT (Domingos e Feriados)</p>
+            </header>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <h3 style="margin-top: 0; color: #d81b60;">☀️ Domingos e Feriados</h3>
+                <p>O Adicional de 100% é pago quando o colaborador ultrapassa a jornada de trabalho aos domingos ou
+                    feriados, exceto se executado em horário noturno (que possui rubrica específica).</p>
+                <div class="formula-section">
+                    Fórmula: (Base 00202 / Carga Horária) x Horas Extras x 2,0
+                </div>
+            </div>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2 class="card-header">Dados para o Cálculo</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Quantidade de Horas Extras</label>
+                        <input type="number" id="qtd-horas" class="form-input" placeholder="Ex: 5" step="0.01">
+                        <small class="form-help">Use formato decimal (ex: 1h 30min = 1.5)</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Carga Horária Mensal</label>
+                        <input type="number" id="carga-horaria" class="form-input" value="220">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Base Calculation Card -->
+            <div class="card">
+                <h2 class="card-header">Base de Cálculo (Base 00202)</h2>
+                <table class="rubric-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Rubrica</th>
+                            <th>Descrição</th>
+                            <th style="width: 150px;">Valor (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rubric-body">
+                        <!-- Will be populated by JS -->
+                    </tbody>
+                </table>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: center;">
+                    <button class="btn btn-primary btn-lg" onclick="calcular()">Calcular Agora</button>
+                    <button id="btnPDF" class="btn btn-danger btn-lg" onclick="exportarPDF()" style="display: none;">📄
+                        Exportar PDF</button>
+                    <button class="btn btn-secondary" onclick="limpar()">Limpar</button>
+                </div>
+            </div>
+
+            <!-- Result Card -->
+            <div id="results" class="card" style="display: none; border-top: 5px solid var(--success);">
+                <h2 class="card-header">Resultado do Cálculo</h2>
+                <div class="result-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="result-item"
+                        style="background: var(--gray-50); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--gray-600);">Base Total (00202)</div>
+                        <div id="res-base" style="font-size: 1.25rem; font-weight: 700; color: var(--ebserh-blue);">R$
+                            0,00</div>
+                    </div>
+                    <div class="result-item"
+                        style="background: var(--gray-50); padding: 1rem; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.85rem; color: var(--gray-600);">Valor da Hora (com 100%)</div>
+                        <div id="res-valor-hora"
+                            style="font-size: 1.25rem; font-weight: 700; color: var(--ebserh-blue);">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <div class="total-banner mt-4">
+                    <span class="total-label">Total Rubrica 00361</span>
+                    <strong class="total-value" id="res-final">R$ 0,00</strong>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script>
+        const rubricasBase = [
+            { cod: '00003', desc: 'SALARIO - CLT' },
+            { cod: '00035', desc: 'GRAT. RAIO X – CLT' },
+            { cod: '00053', desc: 'ADICIONAL DE INSALUBRIDADE PESSOAL REQUISITADO' },
+            { cod: '00064', desc: 'GRATIFICACAO DE RAIO X' },
+            { cod: '00133', desc: 'ADICIONAL DE INSALUBRIDADE' },
+            { cod: '00135', desc: 'ADICIONAL DE PERICULOSIDADE' },
+            { cod: '00825', desc: 'GRATIFICACAO DE RAIO X - CDT/CLT' },
+            { cod: '82404', desc: 'ADIC. DE INSALUBRIDADE (Contrato Temporário)' },
+            { cod: '82405', desc: 'ADIC. DE PERICULOSIDADE (Contrato Temporário)' },
+            { cod: '82842', desc: 'CONT. TEMPORARIO CLT - EBSERH' }
+        ];
+
+        function init() {
+            const tableBody = document.getElementById('rubric-body');
+            tableBody.innerHTML = rubricasBase.map(r => `
+                <tr>
+                    <td><strong>${r.cod}</strong></td>
+                    <td>${r.desc}</td>
+                    <td><input type="number" id="val-${r.cod}" class="form-input" placeholder="0,00" step="0.01"></td>
+                </tr>
+            `).join('');
+        }
+
+        function calcular() {
+            const qtdHoras = parseFloat(document.getElementById('qtd-horas').value) || 0;
+            const cargaHoraria = parseFloat(document.getElementById('carga-horaria').value) || 220;
+
+            let base00202 = 0;
+            rubricasBase.forEach(r => {
+                base00202 += parseFloat(document.getElementById(`val-${r.cod}`).value) || 0;
+            });
+
+            if (base00202 === 0 || qtdHoras === 0) {
+                alert("Por favor, preencha a base salarial e a quantidade de horas.");
+                return;
+            }
+
+            const valorHoraSimples = base00202 / cargaHoraria;
+            const valorHora100 = valorHoraSimples * 2.0;
+            const total = valorHora100 * qtdHoras;
+
+            document.getElementById('res-base').innerText = formatMoeda(base00202);
+            document.getElementById('res-valor-hora').innerText = formatMoeda(valorHora100);
+            document.getElementById('res-final').innerText = formatMoeda(total);
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('btnPDF').style.display = 'inline-block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho institucional
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Ebserh - Hospital Universitário Lauro Wanderley", 10, 15);
+            doc.setFontSize(14);
+            doc.text("Demonstrativo de Serviço Extraordinário (HE 100%)", 10, 22);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 10, 28);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Memória de Cálculo (Rubrica 00361)", 10, 40);
+
+            // Dados da tabela
+            const tableData = rubricasBase.map(r => {
+                const val = parseFloat(document.getElementById(`val-${r.cod}`).value) || 0;
+                return [r.cod, r.desc, formatMoeda(val)];
+            }).filter(row => row[2] !== "R$ 0,00");
+
+            doc.autoTable({
+                startY: 45,
+                head: [['Cód', 'Descrição', 'Valor']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 82, 155] }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 10;
+            const baseTotal = document.getElementById('res-base').innerText;
+            const carga = document.getElementById('carga-horaria').value;
+            const horas = document.getElementById('qtd-horas').value;
+            const valorHora100 = document.getElementById('res-valor-hora').innerText;
+
+            doc.setFontSize(11);
+            doc.text(`Total Base 00202: ${baseTotal}`, 10, finalY);
+            doc.text(`Carga Horária: ${carga}h | Quantidade de HE: ${horas}h`, 10, finalY + 7);
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Fórmula Aplicada:", 10, finalY + 17);
+            doc.setFont("helvetica", "normal");
+            doc.text(`(${baseTotal} / ${carga}) x 2.0 x ${horas}`, 10, finalY + 24);
+            doc.text(`${document.getElementById('res-valor-hora').innerText} x ${horas} = ${document.getElementById('res-final').innerText}`, 10, finalY + 31);
+
+            // Banner Final
+            finalY += 45;
+            doc.setDrawColor(0, 82, 155);
+            doc.setLineWidth(1);
+            doc.rect(10, finalY - 10, 190, 15);
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text(`VALOR TOTAL (Rubrica 00361): ${document.getElementById('res-final').innerText}`, 15, finalY);
+
+            doc.save("horas_extras_100.pdf");
+        }
+
+        function limpar() {
+            document.querySelectorAll('input').forEach(i => i.value = (i.id === 'carga-horaria' ? '220' : ''));
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('btnPDF').style.display = 'none';
+        }
+
+        function formatMoeda(v) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

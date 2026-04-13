@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de DSR | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- jsPDF e html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .formula-box {
+            background: linear-gradient(135deg, #eef6fb 0%, #e0f0f7 100%);
+            padding: 1.5rem;
+            border-left: 5px solid var(--ebserh-blue);
+            margin: 1.5rem 0;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border-radius: var(--radius-md);
+        }
+
+        .highlight {
+            color: var(--ebserh-accent);
+            font-weight: 700;
+        }
+
+        .calculator-card {
+            border-top: 5px solid var(--ebserh-blue);
+        }
+
+        .result-panel {
+            background: var(--gray-50);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            margin-top: 1.5rem;
+            border: 1px solid var(--gray-200);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper" id="capture-area">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora de DSR</h1>
+                <p class="page-subtitle">Cálculo de Descanso Semanal Remunerado sobre variáveis (Hora Extra, etc.)</p>
+            </header>
+
+            <!-- Interactive Calculator -->
+            <div class="card">
+                <h2 class="card-header">Variáveis Incidentes</h2>
+
+                <div id="variable-list">
+                    <div class="form-row">
+                        <input type="text" class="form-input" placeholder="Ex: Hora Extra 50%" value="Hora Extra 50%">
+                        <div style="display: flex; gap: 0.5rem; flex: 1;">
+                            <input type="number" class="form-input var-val" value="0.00" step="0.01">
+                            <button class="btn btn-secondary btn-sm" onclick="this.parentElement.parentElement.remove()"
+                                style="padding: 0 1rem;">×</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary btn-sm" onclick="addVariable()" style="margin-top: 1rem;">
+                    + Adicionar Outra Variável
+                </button>
+
+                <div class="form-row" style="margin-top: 2rem;">
+                    <div class="form-group">
+                        <label class="form-label">Dias Úteis no Mês</label>
+                        <input type="number" id="dias-uteis" class="form-input" value="24">
+                        <small class="form-help">Segunda a Sábado (exceto feriados)</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Domingos e Feriados</label>
+                        <input type="number" id="dias-dsr" class="form-input" value="6">
+                        <small class="form-help">Total de dias de descanso no mês</small>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button class="btn btn-primary btn-block btn-lg" onclick="calcularDSR()">CALCULAR DSR</button>
+                    <button class="btn btn-secondary btn-lg" onclick="limparTudo()">Limpar</button>
+                </div>
+            </div>
+
+            <!-- Results Area -->
+            <div id="result-area" style="display: none;">
+                <h3 style="text-align: center; color: var(--ebserh-blue); margin: 2rem 0 1.5rem;">
+                    MEMÓRIA DE CÁLCULO DETALHADA
+                </h3>
+
+                <div id="step-by-step" class="accordion-container"></div>
+
+                <div class="total-banner">
+                    <span class="total-label">VALOR TOTAL DO DSR</span>
+                    <strong class="total-value" id="final-value">R$ 0,00</strong>
+                </div>
+
+                <button class="btn btn-danger btn-block" onclick="baixarPDF()" style="margin-top: 2rem;">
+                    SALVAR RELATÓRIO EM PDF
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        function fmt(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+                icon.innerText = '▼';
+            } else {
+                content.style.display = 'block';
+                icon.innerText = '▲';
+            }
+        }
+
+        function addVariable() {
+            const container = document.getElementById('variable-list');
+            const row = document.createElement('div');
+            row.className = 'form-row';
+            row.innerHTML = `
+                <input type="text" class="form-input" placeholder="Descrição">
+                <div style="display: flex; gap: 0.5rem; flex: 1;">
+                    <input type="number" class="form-input var-val" value="0.00" step="0.01">
+                    <button class="btn btn-secondary btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 1rem;">×</button>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function calcularDSR() {
+            let totalVariaveis = 0;
+            document.querySelectorAll('.var-val').forEach(input => {
+                totalVariaveis += parseFloat(input.value || 0);
+            });
+
+            const uteis = parseInt(document.getElementById('dias-uteis').value || 1);
+            const dsrDays = parseInt(document.getElementById('dias-dsr').value || 0);
+
+            if (totalVariaveis <= 0) {
+                alert("Insira pelo menos um valor variável positivo.");
+                return;
+            }
+
+            const valorUnitario = totalVariaveis / uteis;
+            const totalDSR = valorUnitario * dsrDays;
+
+            const container = document.getElementById('step-by-step');
+            container.innerHTML = `
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 1: Consolidação das Variáveis</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Soma de todas as variáveis informadas (HE, Prêmios, etc.)
+                        <div class="res-highlight">Total das Variáveis = ${fmt(totalVariaveis)}</div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 2: Média por Dia Útil</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Total das Variáveis (${fmt(totalVariaveis)}) / Dias Úteis (${uteis})
+                        <div class="res-highlight">Média Unitária = ${fmt(valorUnitario)}</div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" style="border-left-color: var(--success);">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 3: Aplicação sobre Folgas (DSR)</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Média Unitária (${fmt(valorUnitario)}) x Nº de Folgas (${dsrDays})
+                        <div class="res-highlight" style="color: var(--success); font-size: 1.25rem;">Valor Final do DSR = ${fmt(totalDSR)}</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('final-value').innerText = fmt(totalDSR);
+            document.getElementById('result-area').style.display = 'block';
+        }
+
+        function baixarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const area = document.getElementById('capture-area');
+
+            html2canvas(area, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                doc.save("Calculo_DSR_Detalhado.pdf");
+            });
+        }
+
+        function limparTudo() {
+            document.getElementById('variable-list').innerHTML = `
+                <div class="form-row">
+                    <input type="text" class="form-input" placeholder="Ex: Hora Extra 50%" value="Hora Extra 50%">
+                    <div style="display: flex; gap: 0.5rem; flex: 1;">
+                        <input type="number" class="form-input var-val" value="0.00" step="0.01">
+                        <button class="btn btn-secondary btn-sm" onclick="this.parentElement.parentElement.remove()" style="padding: 0 1rem;">×</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('dias-uteis').value = 24;
+            document.getElementById('dias-dsr').value = 6;
+            document.getElementById('result-area').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

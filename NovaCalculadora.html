@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Profissional | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .calc-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .calc-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .calc-display {
+            background: var(--ebserh-blue-dark);
+            color: white;
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            text-align: right;
+            margin-bottom: 1rem;
+        }
+
+        .calc-display .display-expr {
+            font-size: 0.85rem;
+            color: var(--gray-400);
+            min-height: 1.2em;
+        }
+
+        .calc-display .display-val {
+            font-size: 2rem;
+            font-weight: 700;
+            word-break: break-all;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+
+        .calc-btn {
+            padding: 0.85rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+
+        .calc-btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .calc-btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-num {
+            background: var(--gray-100);
+            color: var(--gray-800);
+        }
+
+        .btn-op {
+            background: var(--ebserh-blue-light);
+            color: white;
+        }
+
+        .btn-eq {
+            background: var(--ebserh-accent);
+            color: white;
+        }
+
+        .btn-clear {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-mem {
+            background: var(--gray-200);
+            color: var(--gray-700);
+            font-size: 0.85rem;
+        }
+
+        .fita-area {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .fita-linha {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.2rem 0;
+            border-bottom: 1px dashed var(--gray-200);
+        }
+
+        .fita-linha:last-child {
+            border-bottom: none;
+        }
+
+        .fita-total {
+            font-weight: 700;
+            color: var(--ebserh-blue);
+            font-size: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora Profissional</h1>
+                <p class="page-subtitle">Calculadora de mesa com memória e fita de cálculo</p>
+            </header>
+
+            <div class="calc-wrapper">
+                <!-- Calculadora -->
+                <div class="card">
+                    <h2 class="card-header">Calculadora</h2>
+
+                    <div class="calc-display">
+                        <div class="display-expr" id="displayExpr"></div>
+                        <div class="display-val" id="displayVal">0</div>
+                    </div>
+
+                    <div class="calc-grid">
+                        <!-- Memória -->
+                        <button class="calc-btn btn-mem" onclick="memClear()">MC</button>
+                        <button class="calc-btn btn-mem" onclick="memRecall()">MR</button>
+                        <button class="calc-btn btn-mem" onclick="memAdd()">M+</button>
+                        <button class="calc-btn btn-mem" onclick="memSub()">M-</button>
+
+                        <!-- Linha 1 -->
+                        <button class="calc-btn btn-clear" onclick="limpar()">C</button>
+                        <button class="calc-btn btn-op" onclick="toggleSinal()">+/-</button>
+                        <button class="calc-btn btn-op" onclick="porcentagem()">%</button>
+                        <button class="calc-btn btn-op" onclick="operacao('/')">÷</button>
+
+                        <!-- Linha 2 -->
+                        <button class="calc-btn btn-num" onclick="digito('7')">7</button>
+                        <button class="calc-btn btn-num" onclick="digito('8')">8</button>
+                        <button class="calc-btn btn-num" onclick="digito('9')">9</button>
+                        <button class="calc-btn btn-op" onclick="operacao('*')">×</button>
+
+                        <!-- Linha 3 -->
+                        <button class="calc-btn btn-num" onclick="digito('4')">4</button>
+                        <button class="calc-btn btn-num" onclick="digito('5')">5</button>
+                        <button class="calc-btn btn-num" onclick="digito('6')">6</button>
+                        <button class="calc-btn btn-op" onclick="operacao('-')">−</button>
+
+                        <!-- Linha 4 -->
+                        <button class="calc-btn btn-num" onclick="digito('1')">1</button>
+                        <button class="calc-btn btn-num" onclick="digito('2')">2</button>
+                        <button class="calc-btn btn-num" onclick="digito('3')">3</button>
+                        <button class="calc-btn btn-op" onclick="operacao('+')">+</button>
+
+                        <!-- Linha 5 -->
+                        <button class="calc-btn btn-num" style="grid-column:span 2;" onclick="digito('0')">0</button>
+                        <button class="calc-btn btn-num" onclick="digito('.')">.</button>
+                        <button class="calc-btn btn-eq" onclick="igual()">=</button>
+                    </div>
+
+                    <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+                        <button class="btn btn-secondary btn-sm" style="flex:1" onclick="adicionarFita()">+
+                            Fita</button>
+                        <button class="btn btn-danger btn-sm" style="flex:1" onclick="limparFita()">🧹 Limpar
+                            Fita</button>
+                        <button class="btn btn-primary btn-sm" style="flex:1" onclick="salvarPDF()">📄 PDF</button>
+                    </div>
+                </div>
+
+                <!-- Fita -->
+                <div class="card">
+                    <h2 class="card-header">Fita de Cálculo</h2>
+                    <div class="fita-area" id="fita"></div>
+                    <div class="total-banner mt-3">
+                        <span class="total-label">Total da Fita</span>
+                        <strong class="total-value" id="totalFita">R$ 0,00</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        let displayVal = document.getElementById("displayVal");
+        let displayExpr = document.getElementById("displayExpr");
+        let entrada = "0";
+        let operadorAtual = null;
+        let valorAnterior = null;
+        let novaEntrada = false;
+        let memoria = 0;
+        let fita = [];
+
+        function atualizar() { displayVal.textContent = entrada; }
+
+        function digito(d) {
+            if (novaEntrada) { entrada = d === "." ? "0." : d; novaEntrada = false; }
+            else {
+                if (d === "." && entrada.includes(".")) return;
+                entrada = entrada === "0" && d !== "." ? d : entrada + d;
+            }
+            atualizar();
+        }
+
+        function operacao(op) {
+            if (valorAnterior !== null && !novaEntrada) igual();
+            valorAnterior = parseFloat(entrada);
+            operadorAtual = op;
+            novaEntrada = true;
+            displayExpr.textContent = valorAnterior + " " + op;
+        }
+
+        function igual() {
+            if (operadorAtual === null || valorAnterior === null) return;
+            let b = parseFloat(entrada);
+            let r = 0;
+            if (operadorAtual === "+") r = valorAnterior + b;
+            if (operadorAtual === "-") r = valorAnterior - b;
+            if (operadorAtual === "*") r = valorAnterior * b;
+            if (operadorAtual === "/") r = b === 0 ? 0 : valorAnterior / b;
+
+            displayExpr.textContent = valorAnterior + " " + operadorAtual + " " + b + " =";
+            entrada = String(parseFloat(r.toFixed(10)));
+            operadorAtual = null;
+            valorAnterior = null;
+            novaEntrada = true;
+            atualizar();
+        }
+
+        function limpar() {
+            entrada = "0"; operadorAtual = null; valorAnterior = null; novaEntrada = false;
+            displayExpr.textContent = "";
+            atualizar();
+        }
+
+        function toggleSinal() { entrada = String(-parseFloat(entrada)); atualizar(); }
+        function porcentagem() { entrada = String(parseFloat(entrada) / 100); atualizar(); }
+
+        function memClear() { memoria = 0; }
+        function memRecall() { entrada = String(memoria); novaEntrada = false; atualizar(); }
+        function memAdd() { memoria += parseFloat(entrada); }
+        function memSub() { memoria -= parseFloat(entrada); }
+
+        function fmt(v) { return parseFloat(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        function adicionarFita() {
+            let v = parseFloat(entrada);
+            if (isNaN(v)) return;
+            fita.push(v);
+            renderFita();
+        }
+
+        function renderFita() {
+            const el = document.getElementById("fita");
+            let total = 0;
+            el.innerHTML = "";
+            fita.forEach((v, i) => {
+                total += v;
+                const div = document.createElement("div");
+                div.className = "fita-linha";
+                div.innerHTML = `<span>${i + 1}.</span><span>R$ ${fmt(v)}</span>`;
+                el.appendChild(div);
+            });
+            const totalDiv = document.createElement("div");
+            totalDiv.className = "fita-linha fita-total";
+            totalDiv.innerHTML = `<span>Total</span><span>R$ ${fmt(total)}</span>`;
+            el.appendChild(totalDiv);
+            document.getElementById("totalFita").textContent = "R$ " + fmt(total);
+        }
+
+        function limparFita() { fita = []; document.getElementById("fita").innerHTML = ""; document.getElementById("totalFita").textContent = "R$ 0,00"; }
+
+        function salvarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(14);
+            doc.text("Fita de Cálculo - UAP/Divgp", 10, 15);
+            let y = 25;
+            fita.forEach((v, i) => {
+                doc.setFontSize(11);
+                doc.text(`${i + 1}. R$ ${fmt(v)}`, 10, y);
+                y += 7;
+            });
+            let total = fita.reduce((a, b) => a + b, 0);
+            doc.setFontSize(13);
+            doc.text(`Total: R$ ${fmt(total)}`, 10, y + 5);
+            doc.save("fita_calculo.pdf");
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora FGTS | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper" id="capture-area">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora de Saldo FGTS</h1>
+                <p class="page-subtitle">Simulador de depósitos, correção e multa rescisória (40%)</p>
+            </header>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2 class="card-header">Dados para Simulação</h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Salário Bruto Mensal</label>
+                        <input type="number" id="salario" class="form-input" value="3000.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tempo de Serviço (Meses)</label>
+                        <input type="number" id="meses" class="form-input" value="12">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Saldo Atual (Opcional)</label>
+                        <input type="number" id="saldo-inicial" class="form-input" value="0.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo de Contrato (Alíquota)</label>
+                        <select id="aliquota" class="form-input">
+                            <option value="0.08">Normal/Celetista (8%)</option>
+                            <option value="0.02">Aprendiz (2%)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="chk-multa" checked style="width: 20px; height: 20px;">
+                        Calcular Multa Rescisória de 40% (Demissão sem Justa Causa)
+                    </label>
+                </div>
+
+                <button class="btn btn-primary btn-block btn-lg" onclick="calcularFGTS()">
+                    CALCULAR PROJEÇÃO E MULTA
+                </button>
+            </div>
+
+            <!-- Results Area -->
+            <div id="result-area" style="display: none;">
+                <h3 style="text-align: center; color: var(--ebserh-blue); margin: 2rem 0 1.5rem;">
+                    MEMÓRIA DE CÁLCULO DETALHADA
+                </h3>
+
+                <div id="step-by-step" class="accordion-container"></div>
+
+                <div class="total-banner">
+                    <span class="total-label">SALDO TOTAL ESTIMADO (C/ MULTA SE ATIVA)</span>
+                    <span id="final-total" class="total-value">R$ 0,00</span>
+                </div>
+
+                <button class="btn btn-danger btn-block" onclick="baixarPDF()" style="margin-top: 2rem;">
+                    SALVAR SIMULAÇÃO EM PDF
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        function fmt(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+                icon.innerText = '▼';
+            } else {
+                content.style.display = 'block';
+                icon.innerText = '▲';
+            }
+        }
+
+        function calcularFGTS() {
+            const salario = parseFloat(document.getElementById('salario').value || 0);
+            const meses = parseInt(document.getElementById('meses').value || 0);
+            const saldoInicial = parseFloat(document.getElementById('saldo-inicial').value || 0);
+            const aliq = parseFloat(document.getElementById('aliquota').value);
+            const comMulta = document.getElementById('chk-multa').checked;
+
+            // Constantes
+            const depMensal = salario * aliq;
+            const totalDep = depMensal * meses;
+
+            // Correção Estimada (TR + 3% a.a. ou IPCA floor) 
+            // Usando aprox 0.35% a.m. para fins de demonstração simplificada
+            const taxaEstimada = 0.0035;
+            let saldoProjetado = saldoInicial;
+            let jurosAcumulados = 0;
+
+            for (let i = 0; i < meses; i++) {
+                saldoProjetado += depMensal;
+                let jurosMes = saldoProjetado * taxaEstimada;
+                jurosAcumulados += jurosMes;
+                saldoProjetado += jurosMes;
+            }
+
+            const multa = comMulta ? (saldoProjetado * 0.4) : 0;
+            const totalFinal = saldoProjetado + multa;
+
+            // Renderização
+            const container = document.getElementById('step-by-step');
+            container.innerHTML = `
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 1: Depósito Mensal</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Salário Base: ${fmt(salario)} | Alíquota: ${(aliq * 100).toFixed(0)}%<br>
+                        Depósito Mensal Estimado: ${fmt(depMensal)}<br>
+                        Total de Depósitos em ${meses} meses: ${fmt(totalDep)}
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 2: Projeção de Saldo com Correção</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        Saldo Inicial Informado: ${fmt(saldoInicial)}<br>
+                        Total Depositado no período: ${fmt(totalDep)}<br>
+                        Remuneração Estimada (Ex: IPCA/TR+3%): ${fmt(jurosAcumulados)}<br>
+                        <div class="res-highlight">Saldo de Conta FGTS = ${fmt(saldoProjetado)}</div>
+                    </div>
+                </div>
+
+                ${comMulta ? `
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 3: Multa Rescisória (40%)</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Base para multa: ${fmt(saldoProjetado)}<br>
+                        Cálculo: ${fmt(saldoProjetado)} x 40%<br>
+                        <div class="res-highlight">Valor da Multa = ${fmt(multa)}</div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="accordion-item" style="border-left-color: var(--success);">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Finalização: Valor Total</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Saldo Projetado (${fmt(saldoProjetado)}) ${comMulta ? `+ Multa (${fmt(multa)})` : ''}
+                        <div class="res-highlight" style="color: var(--success); font-size: 1.25rem;">Total Disponível = ${fmt(totalFinal)}</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('final-total').innerText = fmt(totalFinal);
+            document.getElementById('result-area').style.display = 'block';
+        }
+
+        function baixarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const area = document.getElementById('capture-area');
+
+            html2canvas(area, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                doc.save("Simulacao_FGTS.pdf");
+            });
+        }
+    </script>
+</body>
+
+</html>

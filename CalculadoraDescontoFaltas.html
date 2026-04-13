@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Desconto de Faltas | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        .rubrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .rubric-card {
+            background: var(--gray-50);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+        }
+
+        .rubric-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--ebserh-blue);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .rubric-id {
+            color: var(--gray-500);
+            font-size: 0.75rem;
+        }
+
+        .formula-box {
+            background: var(--ebserh-blue-light);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin: 1rem 0;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper" id="capture-area">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora de Desconto de Faltas</h1>
+                <p class="page-subtitle">Determinação do Valor da Hora para dedução de faltas (Base 00211)</p>
+            </header>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2 class="card-header">Composição da Base Faltas (Rubricas)</h2>
+
+                <div class="rubrics-grid">
+                    <!-- Rubricas listadas no pedido -->
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>SALARIO - CLT</span> <span class="rubric-id">003</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Salário CLT" placeholder="0,00"
+                            oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>GRAT. RAIO X - CLT</span> <span class="rubric-id">035</span>
+                        </div>
+                        <input type="text" class="form-input rubric-val" data-desc="Grat. Raio X" placeholder="0,00"
+                            oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>ADIC. INSALUBRIDADE</span> <span
+                                class="rubric-id">053/133</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Insalubridade" placeholder="0,00"
+                            oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>GRATIFICACAO DE RAIO X</span> <span class="rubric-id">064</span>
+                        </div>
+                        <input type="text" class="form-input rubric-val" data-desc="Grat. Raio X (064)"
+                            placeholder="0,00" oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>PERICULOSIDADE</span> <span class="rubric-id">067/135</span>
+                        </div>
+                        <input type="text" class="form-input rubric-val" data-desc="Periculosidade" placeholder="0,00"
+                            oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>INSALUBRIDADE S/ VINCULOS</span> <span
+                                class="rubric-id">137</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Insalub. s/ Vínculo"
+                            placeholder="0,00" oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>REM. FUNCAO CONFIANCA</span> <span class="rubric-id">269</span>
+                        </div>
+                        <input type="text" class="form-input rubric-val" data-desc="Função Confiança" placeholder="0,00"
+                            oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>GRAT. CARGO COMISSIONADO</span> <span
+                                class="rubric-id">301</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Cargo Comissionado"
+                            placeholder="0,00" oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>DIF.REMUN. DECISAO JUDICIAL</span> <span
+                                class="rubric-id">420</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Diferença Judicial"
+                            placeholder="0,00" oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>CONT. TEMPORARIO CLT - EBSERH</span> <span
+                                class="rubric-id">82842</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Contrato Temporário"
+                            placeholder="0,00" oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>GRAT. RAIO X (Temporário)</span> <span
+                                class="rubric-id">825</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Grat. Raio X Temp"
+                            placeholder="0,00" oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>ADIC. INSALUBRIDADE (Temp)</span> <span
+                                class="rubric-id">82404</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Insalub. Temp" placeholder="0,00"
+                            oninput="formatAndCalc()">
+                    </div>
+                    <div class="rubric-card">
+                        <div class="rubric-title"><span>ADIC. PERICULOSIDADE (Temp)</span> <span
+                                class="rubric-id">82405</span></div>
+                        <input type="text" class="form-input rubric-val" data-desc="Peric. Temp" placeholder="0,00"
+                            oninput="formatAndCalc()">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Carga Horária Útil do Mês</label>
+                        <input type="number" id="carga-horaria" class="form-input" value="180" min="1">
+                        <small class="form-help">Divisor do mês (ex: 220, 200, 180, 150, 120)</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Horas Faltosas (Quantidade)</label>
+                        <input type="number" id="horas-faltosas" class="form-input" value="0" step="0.01">
+                        <small class="form-help">Total de horas/minutos a descontar</small>
+                    </div>
+                </div>
+
+                <div class="formula-box">
+                    Valor da Hora = (Soma das Rubricas / Carga Horária Útil)
+                </div>
+
+                <button class="btn btn-primary btn-block btn-lg" onclick="calcularDesconto()">
+                    CALCULAR DESCONTO E DETALHAR
+                </button>
+            </div>
+
+            <!-- Results Area -->
+            <div id="result-area" style="display: none;">
+                <h3 style="text-align: center; color: var(--ebserh-blue); margin: 2rem 0 1.5rem;">
+                    MEMÓRIA DE CÁLCULO (BASE 00211)
+                </h3>
+
+                <div id="step-by-step" class="accordion-container"></div>
+
+                <div class="total-banner">
+                    <span class="total-label">VALOR TOTAL DO DESCONTO</span>
+                    <span id="final-total" class="total-value">R$ 0,00</span>
+                </div>
+
+                <div class="form-row" style="margin-top: 2rem; gap: 1rem;">
+                    <button class="btn btn-danger btn-block" onclick="baixarPDF()">
+                        SALVAR EM PDF
+                    </button>
+                    <button class="btn btn-secondary btn-block" onclick="resetarFormulario()">
+                        LIMPAR CAMPOS
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        // Função auxiliar para formatar moeda
+        function fmt(v) {
+            return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // Formatação em tempo real dos inputs de moeda
+        function formatAndCalc() {
+            const inputs = document.querySelectorAll('.rubric-val');
+            inputs.forEach(input => {
+                // Remove caracteres não numéricos
+                let val = input.value.replace(/\D/g, '');
+                if (val !== '') {
+                    val = (parseFloat(val) / 100).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    input.value = val;
+                }
+            });
+        }
+
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+                icon.innerText = '▼';
+            } else {
+                content.style.display = 'block';
+                icon.innerText = '▲';
+            }
+        }
+
+        function calcularDesconto() {
+            // 1. Somar as rubricas
+            const inputs = document.querySelectorAll('.rubric-val');
+            let somaBase = 0;
+            let rubricasUtilizadas = [];
+
+            inputs.forEach(input => {
+                const val = parseNumber(input.value);
+                if (val > 0) {
+                    somaBase += val;
+                    rubricasUtilizadas.push({
+                        nome: input.getAttribute('data-desc'),
+                        valor: val
+                    });
+                }
+            });
+
+            const carga = parseFloat(document.getElementById('carga-horaria').value || 1);
+            const horasFaltosas = parseFloat(document.getElementById('horas-faltosas').value || 0);
+
+            // 2. Cálculo do Valor da Hora
+            const valorHora = somaBase / carga;
+
+            // 3. Cálculo do Desconto
+            const valorDesconto = valorHora * horasFaltosas;
+
+            // Renderização da Memória de Cálculo
+            const container = document.getElementById('step-by-step');
+
+            let rubricasHTML = rubricasUtilizadas.map(r =>
+                `• ${r.nome}: ${fmt(r.valor)}`
+            ).join('<br>');
+
+            if (rubricasUtilizadas.length === 0) rubricasHTML = "Nenhuma rubrica informada.";
+
+            container.innerHTML = `
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 1: Composição da Base (Rubricas)</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        ${rubricasHTML}
+                        <div class="res-highlight">Soma da Base (Base 00211) = ${fmt(somaBase)}</div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 2: Valor da Hora Útil</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Fórmula: Base Faltas / Carga Horária Útil<br>
+                        Cálculo: ${fmt(somaBase)} / ${carga}<br>
+                        <div class="res-highlight">Valor da Hora = ${fmt(valorHora)}</div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" style="border-left-color: var(--error);">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 3: Cálculo do Desconto de Faltas</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Fórmula: Valor da Hora x Horas Faltosas<br>
+                        Cálculo: ${fmt(valorHora)} x ${horasFaltosas}<br>
+                        <div class="res-highlight" style="color: var(--error); font-size: 1.25rem;">
+                            Total de Desconto = ${fmt(valorDesconto)}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('final-total').innerText = fmt(valorDesconto);
+            document.getElementById('result-area').style.display = 'block';
+
+            // Scroll suave para o resultado
+            document.getElementById('result-area').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function baixarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const area = document.getElementById('capture-area');
+
+            html2canvas(area, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                doc.save("Desconto_Faltas_Relatorio.pdf");
+            });
+        }
+
+        function resetarFormulario() {
+            document.querySelectorAll('input').forEach(input => {
+                if (input.type === 'text' || input.id === 'horas-faltosas') input.value = '';
+                if (input.id === 'carga-horaria') input.value = '180';
+            });
+            document.getElementById('result-area').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

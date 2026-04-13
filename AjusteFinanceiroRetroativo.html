@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajuste de Afastamento | Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .comparison-col h4 {
+            margin-bottom: 1rem;
+            color: var(--ebserh-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-highlight {
+            background: #fff;
+            border: 2px solid var(--ebserh-blue);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            margin-top: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+        }
+
+        .result-highlight.credit {
+            border-color: var(--success);
+        }
+
+        .result-highlight.debit {
+            border-color: var(--error);
+        }
+
+        .result-highlight .status-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .credit .status-badge {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .debit .status-badge {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .balance-table {
+            width: 100%;
+            margin-top: 2rem;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .balance-table th {
+            background: #f1f3f5;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--gray-300);
+        }
+
+        .balance-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .balance-table tr.total-row {
+            font-weight: 800;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="main-content">
+        <div class="content-wrapper">
+            <header class="page-header">
+                <h1 class="page-title">Cálculo de Desconto Proporcional</h1>
+                <p class="page-subtitle">Ajustes de folha baseado em remuneração e dias</p>
+            </header>
+
+            <div class="card">
+                <form id="ajuste-form">
+                    <div class="salary-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem;">
+                        <div class="salary-item">
+                            <label>Salário Base (Base 1)</label>
+                            <input type="number" id="salario-base" class="input" placeholder="0,00" step="0.01"
+                                value="4788.05" required>
+                        </div>
+                        <div class="salary-item">
+                            <label>Adicionais/Vantagens (Base 2)</label>
+                            <input type="number" id="adicionais" class="input" placeholder="0,00" step="0.01"
+                                value="1915.22" required>
+                        </div>
+                    </div>
+
+                    <div class="salary-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem;">
+                        <div class="salary-item">
+                            <label>Divisor (Dias do Mês)</label>
+                            <input type="number" id="divisor" class="input" placeholder="30 ou 31" value="31" required>
+                        </div>
+                        <div class="salary-item">
+                            <label>Dias de Afastamento</label>
+                            <input type="number" id="dias-afastamento" class="input" placeholder="Qtde dias" value="29"
+                                required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="submit" class="btn btn-primary">Calcular Desconto</button>
+                        <button type="reset" class="btn btn-secondary"
+                            onclick="document.getElementById('result-area').style.display='none'">Limpar</button>
+                    </div>
+                </form>
+
+                <div id="result-area" style="display: none;">
+                    <div class="result-highlight">
+                        <h3 id="result-title">Valor do Desconto/Ajuste</h3>
+                        <div class="value" id="final-result">R$ 0,00</div>
+                    </div>
+
+                    <div class="memory-box">
+                        <h4 style="margin-bottom: 1rem;">Memória de Cálculo</h4>
+                        <div id="calculation-details" style="font-family: monospace; line-height: 1.6;"></div>
+                    </div>
+
+                    <table class="balance-table">
+                        <thead>
+                            <tr>
+                                <th>Descrição / Origem</th>
+                                <th>Valor Calculado/Informado</th>
+                                <th>Responsável</th>
+                            </tr>
+                        </thead>
+                        <tbody id="balance-body"></tbody>
+                    </table>
+
+                    <div class="info-box" style="margin-top: 2rem;">
+                        <strong>Regra Geral:</strong> O Hospital (Ebserh) é responsável pelo pagamento dos primeiros 15
+                        dias de afastamento (Código 36). A partir do 16º dia, a responsabilidade financeira é do INSS.
+                        Saldo positivo indica valor a receber; saldo negativo indica valores a regularizar/devolver.
+                    </div>
+
+                    <div style="margin-top: 1.5rem;">
+                        <button class="btn btn-success" onclick="window.print()">Imprimir Análise</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script src="js/ajuste-financeiro.js"></script>
+</body>
+
+</html>

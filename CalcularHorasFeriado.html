@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Horas Feriado | Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bibliotecas de Exportação -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="main-content">
+        <div class="content-wrapper">
+            <header class="page-header">
+                <h1 class="page-title">Calculadora de Horas Feriado</h1>
+                <p class="page-subtitle">Rubrica 82043 - Remuneração em Dobro (ACT Cláusula 15ª)</p>
+            </header>
+
+            <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <!-- Card de Entrada: Base de Cálculo -->
+                <div class="card">
+                    <h2 class="card-header">Base de Cálculo (00202)</h2>
+                    <div id="base-fields" class="form-group">
+                        <label class="form-label">Salário Base (00003 / 82842)</label>
+                        <input type="number" id="salario" class="form-input" placeholder="0,00" step="0.01">
+
+                        <label class="form-label">Adic. Insalubridade (00133 / 82404)</label>
+                        <input type="number" id="insalubridade" class="form-input" placeholder="0,00" step="0.01">
+
+                        <label class="form-label">Adic. Periculosidade (00135 / 82405)</label>
+                        <input type="number" id="periculosidade" class="form-input" placeholder="0,00" step="0.01">
+
+                        <label class="form-label">Gratificações Raio X (00035 / 00064 / 00825)</label>
+                        <input type="number" id="raio-x" class="form-input" placeholder="0,00" step="0.01">
+
+                        <label class="form-label">Outras Rubricas Base 00202</label>
+                        <input type="number" id="outras" class="form-input" placeholder="0,00" step="0.01">
+                    </div>
+                </div>
+
+                <!-- Card de Entrada: Jornada e Horas -->
+                <div class="card">
+                    <h2 class="card-header">Dados do Período</h2>
+                    <div class="form-group">
+                        <label class="form-label">Carga Horária Mensal</label>
+                        <select id="carga-horaria" class="form-input">
+                            <option value="180">180 horas</option>
+                            <option value="220" selected>220 horas</option>
+                            <option value="150">150 horas</option>
+                            <option value="120">120 horas</option>
+                            <option value="200">200 horas</option>
+                        </select>
+
+                        <label class="form-label">Horas Trabalhadas no Feriado</label>
+                        <input type="number" id="horas-trabalhadas" class="form-input" placeholder="Ex: 12" step="0.1">
+
+                        <div style="margin-top: 2rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="calcular()">Calcular</button>
+                            <button class="btn btn-secondary" onclick="limpar()">Limpar</button>
+                            <button class="btn btn-success" id="btnExcel" onclick="exportarExcel()"
+                                style="display: none;">Excel</button>
+                            <button class="btn btn-danger" id="btnPDF" onclick="exportarPDF()"
+                                style="display: none;">PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card de Resultado -->
+            <div id="resultado-card" class="card" style="margin-top: 1.5rem; display: none;">
+                <h2 class="card-header">Resultado do Cálculo</h2>
+                <div id="resultado-content" style="line-height: 1.8;">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script>
+        let ultimoCalculo = null;
+
+        function calcular() {
+            const salario = parseFloat(document.getElementById('salario').value) || 0;
+            const insalubridade = parseFloat(document.getElementById('insalubridade').value) || 0;
+            const periculosidade = parseFloat(document.getElementById('periculosidade').value) || 0;
+            const raioX = parseFloat(document.getElementById('raio-x').value) || 0;
+            const outras = parseFloat(document.getElementById('outras').value) || 0;
+
+            const base00202 = salario + insalubridade + periculosidade + raioX + outras;
+            const cargaHoraria = parseFloat(document.getElementById('carga-horaria').value);
+            const horasTrabalhadas = parseFloat(document.getElementById('horas-trabalhadas').value) || 0;
+
+            if (horasTrabalhadas <= 0) {
+                alert("Informe as horas trabalhadas.");
+                return;
+            }
+
+            const valorHora = base00202 / cargaHoraria;
+            const valorFeriado = valorHora * horasTrabalhadas * 2;
+
+            ultimoCalculo = {
+                base: base00202,
+                carga: cargaHoraria,
+                horas: horasTrabalhadas,
+                valorHora: valorHora,
+                total: valorFeriado,
+                data: new Date().toLocaleDateString('pt-BR')
+            };
+
+            const format = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            document.getElementById('resultado-card').style.display = 'block';
+            document.getElementById('btnExcel').style.display = 'inline-flex';
+            document.getElementById('btnPDF').style.display = 'inline-flex';
+
+            document.getElementById('resultado-content').innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <p><strong>Base 00202:</strong> ${format(base00202)}</p>
+                        <p><strong>Carga Horária:</strong> ${cargaHoraria}h</p>
+                        <p><strong>Valor/Hora:</strong> ${format(valorHora)}</p>
+                    </div>
+                    <div>
+                        <p><strong>Horas Feriado:</strong> ${horasTrabalhadas}h</p>
+                        <p><strong>Fator de Dobro:</strong> 2.0x</p>
+                        <p style="font-size: 1.25rem; color: var(--ebserh-blue);"><strong>Total: ${format(valorFeriado)}</strong></p>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.85rem; color: var(--gray-600);">
+                    <strong>Memória de Cálculo:</strong> (${format(base00202)} / ${cargaHoraria}) * ${horasTrabalhadas} * 2 = ${format(valorFeriado)}
+                </div>
+            `;
+        }
+
+        function limpar() {
+            document.querySelectorAll('input').forEach(i => i.value = '');
+            document.getElementById('resultado-card').style.display = 'none';
+            document.getElementById('btnExcel').style.display = 'none';
+            document.getElementById('btnPDF').style.display = 'none';
+            ultimoCalculo = null;
+        }
+
+        function exportarExcel() {
+            if (!ultimoCalculo) return;
+            const ws_data = [
+                ["Item", "Valor / Descrição"],
+                ["Base 00202", ultimoCalculo.base],
+                ["Carga Horária", ultimoCalculo.carga],
+                ["Horas Trabalhadas", ultimoCalculo.horas],
+                ["Fator Remuneração", "2.0x"],
+                ["Valor Final", ultimoCalculo.total],
+                ["Data do Cálculo", ultimoCalculo.data]
+            ];
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Calculo Horas Feriado");
+            XLSX.writeFile(wb, "Calculo_Horas_Feriado.xlsx");
+        }
+
+        function exportarPDF() {
+            if (!ultimoCalculo) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text("Demostrador de Horas Feriado", 14, 20);
+
+            doc.setFontSize(11);
+            doc.text(`Data: ${ultimoCalculo.data}`, 14, 30);
+
+            const dataTable = [
+                ["Descrição", "Valores"],
+                ["Base de Cálculo (00202)", ultimoCalculo.base.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })],
+                ["Carga Horária Mensal", `${ultimoCalculo.carga}h`],
+                ["Horas Trabalhadas no Feriado", `${ultimoCalculo.horas}h`],
+                ["Fator (ACT Cláusula 15ª)", "2.0x (Dobro)"],
+                ["Valor Total a Receber", ultimoCalculo.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })]
+            ];
+
+            doc.autoTable({
+                startY: 40,
+                head: [dataTable[0]],
+                body: dataTable.slice(1),
+                theme: 'striped',
+                headStyles: { fillColor: [0, 84, 156] }
+            });
+
+            doc.save("Demonstrativo_Horas_Feriado.pdf");
+        }
+    </script>
+</body>
+
+</html>

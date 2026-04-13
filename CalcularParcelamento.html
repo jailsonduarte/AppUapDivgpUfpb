@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Parcelamento | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .resultado-texto {
+            white-space: pre-line;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1rem 0;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora de Parcelamento – Ebserh</h1>
+                <p class="page-subtitle">Critérios do Item 9 — Cálculo de parcelamento de débitos</p>
+            </header>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2 class="card-header">Dados do Parcelamento</h2>
+
+                <div class="form-group">
+                    <label class="form-label">Tipo de agente:</label>
+                    <select id="tipo" class="form-select">
+                        <option>Ativo</option>
+                        <option>Desligado</option>
+                        <option>Afastado</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Valor total do débito (R$):</label>
+                        <input type="number" id="debito" class="form-input" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Última remuneração (R$):</label>
+                        <input type="number" id="remuneracao" class="form-input" placeholder="0,00">
+                    </div>
+                </div>
+
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="tipoPagamento" id="integral"> Pagamento integral
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="tipoPagamento" id="extemporaneo"> Pagamento Parcelado
+                    </label>
+                </div>
+
+                <div id="boxParcelas" style="display:none;" class="form-group">
+                    <label class="form-label">Escolha o número de parcelas (1 a 10):</label>
+                    <select id="numParcelas" class="form-select">
+                        <option value="">-- selecione --</option>
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                        <option>4</option>
+                        <option>5</option>
+                        <option>6</option>
+                        <option>7</option>
+                        <option>8</option>
+                        <option>9</option>
+                        <option>10</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary btn-block btn-lg" onclick="calcular()">CALCULAR</button>
+
+                <div id="resultado" class="result-box mt-4" style="display:none;">
+                    <div class="resultado-texto" id="resultadoTexto"></div>
+                </div>
+
+                <div style="display:flex; gap:1rem; margin-top:1rem;" id="botoesAcao" style="display:none;">
+                    <button class="btn btn-secondary" style="flex:1" onclick="copiarResultado()">📋 Copiar</button>
+                    <button class="btn btn-danger" style="flex:1" onclick="salvarPDF()">📄 Salvar PDF</button>
+                </div>
+
+                <p style="text-align:center; margin-top:2rem; font-size:0.85rem; color:var(--gray-500);">
+                    Uso interno – Ebserh / HULW
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        document.getElementById("extemporaneo").addEventListener("change", () => {
+            document.getElementById("boxParcelas").style.display =
+                document.getElementById("extemporaneo").checked ? "block" : "none";
+        });
+
+        document.getElementById("integral").addEventListener("change", () => {
+            if (document.getElementById("integral").checked) {
+                document.getElementById("boxParcelas").style.display = "none";
+            }
+        });
+
+        function calcular() {
+            let tipo = document.getElementById("tipo").value;
+            let debito = parseFloat(document.getElementById("debito").value);
+            let remuneracao = parseFloat(document.getElementById("remuneracao").value);
+            let integral = document.getElementById("integral").checked;
+            let parcelado = document.getElementById("extemporaneo").checked;
+            let qtdEscolhida = parseInt(document.getElementById("numParcelas").value);
+            let res = document.getElementById("resultado");
+
+            if (isNaN(debito) || isNaN(remuneracao) || debito <= 0 || remuneracao <= 0) {
+                res.style.display = "block";
+                document.getElementById("resultadoTexto").innerText = "❌ Preencha corretamente os valores numéricos.";
+                return;
+            }
+
+            let f = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+            let salarios = debito / remuneracao;
+            let vencimento = "";
+            if (parcelado) {
+                vencimento = "5 dias úteis";
+            } else if (integral) {
+                if (tipo === "Ativo") vencimento = debito > remuneracao ? "5 dias" : "Imediato";
+                else vencimento = "60 dias";
+            }
+
+            let resultado = "";
+
+            if (tipo === "Ativo" && parcelado) {
+                let percentual;
+                if (salarios <= 2) percentual = 0.20;
+                else if (salarios <= 5) percentual = 0.30;
+                else percentual = 0.40;
+
+                let parcelaMin = remuneracao * percentual;
+                let parcelaMax = remuneracao * 0.70;
+                let parcelas = Math.ceil(debito / parcelaMin);
+                let avisoExcepcional = "";
+
+                if (parcelas > 10) {
+                    parcelaMin = remuneracao * 0.10;
+                    parcelas = Math.ceil(debito / parcelaMin);
+                    if (parcelas > 10) {
+                        parcelas = 10;
+                        avisoExcepcional = "⚠ Atenção: aplicado item 9 – até 10 parcelas podem ter valor ≥10% da remuneração.";
+                    }
+                }
+
+                if (!isNaN(qtdEscolhida) && qtdEscolhida >= 1 && qtdEscolhida <= 10) {
+                    parcelas = qtdEscolhida;
+                    let valorParcelaEscolhida = debito / parcelas;
+
+                    if (valorParcelaEscolhida < parcelaMin) {
+                        res.style.display = "block";
+                        document.getElementById("resultadoTexto").innerText = `❌ O valor da parcela escolhida (${f(valorParcelaEscolhida)}) não pode ser inferior ao mínimo permitido (${f(parcelaMin)}).`;
+                        return;
+                    }
+                    if (valorParcelaEscolhida > parcelaMax) {
+                        res.style.display = "block";
+                        document.getElementById("resultadoTexto").innerText = `❌ O valor da parcela escolhida (${f(valorParcelaEscolhida)}) ultrapassa 70% da remuneração (${f(parcelaMax)}).`;
+                        return;
+                    }
+                    parcelaMin = valorParcelaEscolhida;
+                }
+
+                let forma = parcelaMin <= parcelaMax ? "Desconto em folha" : "GRU";
+
+                resultado = `TIPO: AGENTE ATIVO\n\nDébito total: ${f(debito)}\nRemuneração: ${f(remuneracao)}\nEquivale a: ${salarios.toFixed(2)} salários\n\nPercentual mínimo: ${(percentual * 100)}%\nPercentual máximo: 70%\n\nNúmero de parcelas: ${parcelas}\nValor da parcela: ${f(parcelaMin)}\n\nForma de pagamento: ${forma}\nVencimento da GRU: ${forma === "GRU" ? vencimento : "-"}\n\n${avisoExcepcional}`;
+            }
+            else if ((tipo === "Desligado" || tipo === "Afastado") && parcelado) {
+                let percentual = salarios <= 2 ? 0.20 : 0.30;
+                let parcelaMin = remuneracao * percentual;
+                let parcelas = Math.ceil(debito / parcelaMin);
+                if (parcelas > 10) parcelas = 10;
+
+                if (!isNaN(qtdEscolhida)) {
+                    parcelas = qtdEscolhida;
+                    let valorParcela = debito / parcelas;
+                    if (valorParcela < parcelaMin) {
+                        res.style.display = "block";
+                        document.getElementById("resultadoTexto").innerText = `❌ A parcela escolhida (${f(valorParcela)}) é menor que o mínimo permitido (${f(parcelaMin)}).`;
+                        return;
+                    }
+                    parcelaMin = valorParcela;
+                }
+
+                resultado = `TIPO: ${tipo.toUpperCase()}\n\nDébito total: ${f(debito)}\nÚltima remuneração: ${f(remuneracao)}\nEquivale a: ${salarios.toFixed(2)} salários\n\nPercentual mínimo: ${(percentual * 100)}%\nNúmero de parcelas: ${parcelas}\nValor da parcela: ${f(parcelaMin)}\n\nForma de pagamento: GRU\nVencimento: ${vencimento}\n\n⚠ Inadimplência: envio ao SPP para CADIN e cobrança judicial.`;
+            }
+            else if (integral) {
+                resultado = `PAGAMENTO INTEGRAL\n\nTipo de agente: ${tipo}\nValor total: ${f(debito)}\n\nForma: GRU\nVencimento: ${vencimento}`;
+            }
+
+            document.getElementById("resultadoTexto").innerText = resultado;
+            res.style.display = "block";
+            document.getElementById("botoesAcao").style.display = "flex";
+        }
+
+        function copiarResultado() {
+            const texto = document.getElementById("resultadoTexto").innerText;
+            navigator.clipboard.writeText(texto).then(() => alert("Resultado copiado!"));
+        }
+
+        function salvarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho Ebserh
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Ebserh - Hospital Universitário Lauro Wanderley", 10, 15);
+            doc.setFontSize(14);
+            doc.text("Simulação de Parcelamento de Débito (Item 9)", 10, 22);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 10, 28);
+
+            const texto = document.getElementById("resultadoTexto").innerText;
+            const linhas = doc.splitTextToSize(texto, 180);
+
+            doc.setFont("courier", "normal");
+            doc.setFontSize(11);
+            doc.text(linhas, 10, 40);
+
+            doc.save("parcelamento_ebserh.pdf");
+        }
+    </script>
+</body>
+
+</html>

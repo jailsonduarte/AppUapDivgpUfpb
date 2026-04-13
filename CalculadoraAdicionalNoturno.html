@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Adicional Noturno | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .info-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--warning);
+            margin-bottom: 1.5rem;
+        }
+
+        .formula-section {
+            background: var(--gray-100);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--ebserh-blue);
+        }
+
+        .formula-step {
+            background: white;
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            margin: 0.75rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+
+        .rubric-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .rubric-table th {
+            background: var(--ebserh-blue);
+            color: white;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .rubric-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .rubric-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .result-item {
+            background: var(--gray-100);
+            padding: 1.25rem;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .result-item-label {
+            font-size: 0.85rem;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .result-item-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--ebserh-accent);
+        }
+
+        .final-result {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            padding: 2rem;
+            border-radius: var(--radius-md);
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora Adicional Noturno</h1>
+                <p class="page-subtitle">Rubrica 00411 - Adicional Noturno CLT</p>
+            </header>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <h3 style="margin-top: 0; color: var(--ebserh-blue);">🌙 Considerações Iniciais</h3>
+                <p style="margin: 0.5rem 0;">
+                    <strong>Horário Noturno:</strong> Trabalho executado entre <strong>22h</strong> de um dia e
+                    <strong>5h</strong> do dia seguinte.
+                </p>
+                <p style="margin: 0.5rem 0; font-size: 0.9rem; color: var(--gray-700);">
+                    <strong>Tipo:</strong> Vencimento/Desconto | <strong>Fator:</strong> 6, 7, 8<br>
+                    <strong>Usada para:</strong> Pagamento do Adicional Noturno apurado no mês anterior | Retroativos
+                </p>
+            </div>
+
+            <!-- Formula Section -->
+            <div class="formula-section">
+                <h3 style="margin-top: 0; color: var(--ebserh-blue);">📐 Fórmula de Cálculo</h3>
+
+                <div class="formula-step">
+                    <strong>Passo 1:</strong> Converter horas normais em horas noturnas<br>
+                    Horas Noturnas = (Quantidade de horas normais) × (60 ÷ 52,5)
+                </div>
+
+                <div class="formula-step">
+                    <strong>Passo 2:</strong> Calcular o adicional noturno<br>
+                    Adicional Noturno = (Base 00411 ÷ Carga Horária Mensal) × 20% × Horas Noturnas
+                </div>
+            </div>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2 class="card-header">Dados para Cálculo</h2>
+
+                <div class="form-row" style="margin-bottom: 1.5rem;">
+                    <div class="form-group" style="flex: 1 1 100%;">
+                        <label class="form-label">Modo de Entrada de Horas</label>
+                        <div style="display: flex; gap: 2rem; margin-top: 0.5rem; background: var(--gray-50); padding: 1rem; border-radius: var(--radius-sm);">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="modo-horas" value="converter" checked onclick="toggleModoHoras()">
+                                <span>Informar Horas Normais (sistema converte)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="modo-horas" value="direto" onclick="toggleModoHoras()">
+                                <span>Informar Horas já Convertidas/Transformadas</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" id="label-horas">Horas Normais Trabalhadas no Período Noturno</label>
+                        <input type="number" id="horas-normais" class="form-input" value="0" step="0.01" min="0">
+                        <small class="form-help" id="help-horas">Quantidade de horas trabalhadas entre 22h e 5h (em horas normais)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Carga Horária Mensal do Colaborador</label>
+                        <input type="number" id="carga-horaria" class="form-input" value="220" step="1" min="1">
+                        <small class="form-help">Total de horas mensais do contrato (ex: 220h, 200h, 180h)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Base Calculation Card -->
+            <div class="card">
+                <h2 class="card-header">Base para Adicional Noturno (Base 00411)</h2>
+
+                <table class="rubric-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Rubrica</th>
+                            <th>Descrição</th>
+                            <th style="width: 100px;">Fator</th>
+                            <th style="width: 150px;">Valor (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rubric-table-body"></tbody>
+                </table>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary btn-lg" onclick="calcular()">Calcular Adicional Noturno</button>
+                    <button id="btnPDF" class="btn btn-danger btn-lg" onclick="exportarPDF()" style="display: none;">📄
+                        Exportar PDF</button>
+                    <button class="btn btn-secondary" onclick="limpar()">Limpar</button>
+                </div>
+
+                <!-- Results -->
+                <div id="results" style="display: none;">
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <div class="result-item-label">Horas Normais</div>
+                            <div class="result-item-value" id="horas-normais-display">0h</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-item-label">Horas Noturnas</div>
+                            <div class="result-item-value" id="horas-noturnas-display">0h</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-item-label">Base 00411</div>
+                            <div class="result-item-value" id="base-total">R$ 0,00</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-item-label">Valor Hora</div>
+                            <div class="result-item-value" id="valor-hora">R$ 0,00</div>
+                        </div>
+                    </div>
+
+                    <div class="final-result">
+                        <div style="font-size: 1rem; color: var(--gray-700); margin-bottom: 0.5rem;">
+                            Adicional Noturno (Rubrica 00411)
+                        </div>
+                        <div style="font-size: 2.5rem; font-weight: 800; color: var(--success);" id="resultado-final">
+                            R$ 0,00
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        // Rubricas da Base 00411
+        const rubricas = [
+            { codigo: '00003', descricao: 'SALARIO - CLT', fator: 0 },
+            { codigo: '00035', descricao: 'GRAT. RAIO X – CLT', fator: 0 },
+            { codigo: '00053', descricao: 'ADICIONAL DE INSALUBRIDADE PESSOAL REQUISITADO', fator: 0 },
+            { codigo: '00064', descricao: 'GRATIFICACAO DE RAIO X', fator: 0 },
+            { codigo: '00067', descricao: 'PERICULOSIDADE PESSOAL REQUISITADO', fator: 0 },
+            { codigo: '00133', descricao: 'ADICIONAL DE INSALUBRIDADE', fator: 0 },
+            { codigo: '00135', descricao: 'ADICIONAL DE PERICULOSIDADE', fator: 0 },
+            { codigo: '00825', descricao: 'GRATIFICACAO DE RAIO X - CDT/CLT', fator: 0 },
+            { codigo: '82404', descricao: 'ADIC. DE INSALUBRIDADE (Contrato Temporario)', fator: 0 },
+            { codigo: '82405', descricao: 'ADIC. DE PERICULOSIDADE (Contrato Temporario)', fator: 0 },
+            { codigo: '82842', descricao: 'CONT. TEMPORARIO CLT - EBSERH', fator: 0 }
+        ];
+
+        function renderTable() {
+            const tbody = document.getElementById('rubric-table-body');
+            tbody.innerHTML = rubricas.map(r => `
+                <tr>
+                    <td><strong>${r.codigo}</strong></td>
+                    <td>${r.descricao}</td>
+                    <td style="text-align: center;">${r.fator}</td>
+                    <td>
+                        <input type="number" 
+                               class="form-input" 
+                               id="rubric-${r.codigo}" 
+                               value="0" 
+                               step="0.01" 
+                               min="0"
+                               placeholder="0,00"
+                               style="width: 100%;">
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function toggleModoHoras() {
+            const modo = document.querySelector('input[name="modo-horas"]:checked').value;
+            const label = document.getElementById('label-horas');
+            const help = document.getElementById('help-horas');
+            
+            if (modo === 'converter') {
+                label.innerText = 'Horas Normais Trabalhadas no Período Noturno';
+                help.innerText = 'Quantidade de horas trabalhadas entre 22h e 5h (em horas normais)';
+            } else {
+                label.innerText = 'Horas Noturnas (já Transformadas/Convertidas)';
+                help.innerText = 'Quantidade de horas já considerando o fator de redução (60/52,5)';
+            }
+        }
+
+        function calcular() {
+            // Obter dados de entrada
+            const horasInformadas = parseFloat(document.getElementById('horas-normais').value) || 0;
+            const cargaHoraria = parseFloat(document.getElementById('carga-horaria').value) || 220;
+            const modo = document.querySelector('input[name="modo-horas"]:checked').value;
+
+            // Passo 1: Definir horas noturnas
+            let horasNoturnas = 0;
+            let displayHorasOriginais = horasInformadas.toFixed(2) + 'h';
+            
+            if (modo === 'converter') {
+                horasNoturnas = horasInformadas * (60 / 52.5);
+            } else {
+                horasNoturnas = horasInformadas;
+            }
+
+            // Calcular Base 00411
+            let base00411 = 0;
+            rubricas.forEach(r => {
+                const valor = parseFloat(document.getElementById(`rubric-${r.codigo}`).value) || 0;
+                base00411 += valor;
+            });
+
+            // Passo 2: Calcular adicional noturno
+            const valorHora = base00411 / cargaHoraria;
+            const adicionalNoturno = valorHora * 0.20 * horasNoturnas;
+
+            // Exibir resultados
+            document.getElementById('horas-normais-display').innerText = (modo === 'converter' ? horasInformadas.toFixed(2) : '-') + 'h';
+            document.getElementById('horas-noturnas-display').innerText = horasNoturnas.toFixed(2) + 'h';
+            document.getElementById('base-total').innerText = formatMoeda(base00411);
+            document.getElementById('valor-hora').innerText = formatMoeda(valorHora);
+            document.getElementById('resultado-final').innerText = formatMoeda(adicionalNoturno);
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('btnPDF').style.display = 'inline-block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho Ebserh
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Ebserh - Hospital Universitário Lauro Wanderley", 10, 15);
+            doc.setFontSize(14);
+            doc.text("Cálculo de Adicional Noturno (Rubrica 00411)", 10, 22);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 10, 28);
+
+            let yPos = 35;
+
+            // Dados de Entrada
+            doc.setFont("helvetica", "bold");
+            doc.text("Dados de Entrada", 10, yPos);
+            yPos += 7;
+            doc.setFont("helvetica", "normal");
+            doc.text(`Horas Normais Trabalhadas: ${document.getElementById('horas-normais').value}h`, 10, yPos);
+            yPos += 5;
+            doc.text(`Carga Horária Mensal: ${document.getElementById('carga-horaria').value}h`, 10, yPos);
+            yPos += 10;
+
+            // Memória de Cálculo - Passo 1
+            const modo = document.querySelector('input[name="modo-horas"]:checked').value;
+            const horasInformadas = document.getElementById('horas-normais').value;
+            const horasNoturnasDisplay = document.getElementById('horas-noturnas-display').innerText;
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Passo 1: Definição de Horas Noturnas", 10, yPos);
+            yPos += 7;
+            doc.setFont("helvetica", "normal");
+            
+            if (modo === 'converter') {
+                doc.text(`Modo: Conversão de Horas Normais`, 10, yPos);
+                yPos += 5;
+                doc.text(`Cálculo: ${horasInformadas}h * (60 / 52.5) = ${horasNoturnasDisplay}`, 10, yPos);
+            } else {
+                doc.text(`Modo: Horas já Transformadas (entrada direta)`, 10, yPos);
+                yPos += 5;
+                doc.text(`Valor informado: ${horasInformadas}h = ${horasNoturnasDisplay}`, 10, yPos);
+            }
+            yPos += 10;
+
+            // Memória de Cálculo - Passo 2 (Base)
+            doc.setFont("helvetica", "bold");
+            doc.text("Passo 2: Base de Cálculo (Base 00411)", 10, yPos);
+            yPos += 5;
+
+            const tableData = rubricas.map(r => {
+                const val = parseFloat(document.getElementById(`rubric-${r.codigo}`).value) || 0;
+                return [r.codigo, r.descricao, formatMoeda(val)];
+            }).filter(row => row[2] !== "R$ 0,00");
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Cód', 'Descrição', 'Valor']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 82, 155] }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 10;
+            doc.setFont("helvetica", "bold");
+            doc.text(`Total Base 00411: ${document.getElementById('base-total').innerText}`, 10, yPos);
+            yPos += 10;
+
+            // Passo 3: Cálculo Final
+            doc.text("Passo 3: Cálculo do Adicional", 10, yPos);
+            yPos += 7;
+            doc.setFont("helvetica", "normal");
+            const valorHora = document.getElementById('valor-hora').innerText;
+            const horasNoturnas = document.getElementById('horas-noturnas-display').innerText;
+            doc.text(`Calculo: (${valorHora}) * 20% * ${horasNoturnas}`, 10, yPos);
+            yPos += 15;
+
+            // Resultado Final
+            doc.setDrawColor(0, 82, 155);
+            doc.setLineWidth(1);
+            doc.rect(10, yPos, 190, 15);
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text(`VALOR TOTAL (Rubrica 00411): ${document.getElementById('resultado-final').innerText}`, 15, yPos + 10);
+
+            doc.save("adicional_noturno_detalhado.pdf");
+        }
+
+        function limpar() {
+            // Limpar inputs
+            document.getElementById('horas-normais').value = '0';
+            document.getElementById('carga-horaria').value = '220';
+
+            // Resetar modo de horas
+            document.querySelector('input[name="modo-horas"][value="converter"]').checked = true;
+            toggleModoHoras();
+
+            // Limpar rubricas
+            rubricas.forEach(r => {
+                document.getElementById(`rubric-${r.codigo}`).value = '0';
+            });
+
+            // Esconder resultados
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('btnPDF').style.display = 'none';
+        }
+
+        function formatMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor);
+        }
+
+        // Inicializar
+        renderTable();
+        toggleModoHoras();
+    </script>
+</body>
+
+</html>

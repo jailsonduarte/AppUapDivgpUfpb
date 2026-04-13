@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificação - Reposição ao Erário | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Gerar Notificação</h1>
+                <p class="page-subtitle">Geração de texto de notificação de reposição ao erário</p>
+            </header>
+
+            <!-- Formulário -->
+            <div class="card">
+                <h2 class="card-header">Dados da Notificação</h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nome do(a) agente público(a)</label>
+                        <input type="text" id="nomeAgente" class="form-input" placeholder="Digite o nome completo">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Matrícula</label>
+                        <input type="text" id="matricula" class="form-input" placeholder="Digite a matrícula">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Valor devido (R$)</label>
+                    <input type="text" id="valor" class="form-input" placeholder="Ex: 2.530,44">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Motivo (fatos e cálculos)</label>
+                    <textarea id="motivo" class="form-textarea" rows="4"
+                        placeholder="Descreva resumidamente os fatos, período e cálculos"></textarea>
+                </div>
+
+                <button class="btn btn-primary btn-block btn-lg" onclick="gerarTexto()">Gerar Texto</button>
+            </div>
+
+            <!-- Resultado -->
+            <div class="card mt-4" id="resultadoCard" style="display:none;">
+                <h2 class="card-header">Texto Gerado</h2>
+                <textarea id="resultado" class="form-textarea" rows="14"
+                    style="font-size:0.9rem; line-height:1.7;"></textarea>
+                <div style="display:flex; gap:1rem; margin-top:1rem;">
+                    <button class="btn btn-success" style="flex:1" onclick="copiar()">📋 Copiar Texto</button>
+                    <button class="btn btn-danger" style="flex:1" onclick="limpar()">🧹 Limpar Tudo</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        function formatar(v) {
+            return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function numeroPorExtenso(valor) {
+            const unidades = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove"];
+            const especiais = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
+            const dezenas = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
+            const centenas = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
+
+            let inteiro = Math.floor(valor);
+            let centavos = Math.round((valor - inteiro) * 100);
+            let extenso = "";
+
+            if (inteiro === 0) extenso = "zero";
+            else {
+                if (inteiro === 100) extenso = "cem";
+                else {
+                    let c = Math.floor(inteiro / 100);
+                    let d = Math.floor((inteiro % 100) / 10);
+                    let u = inteiro % 10;
+                    if (c) extenso += centenas[c] + (d || u ? " e " : "");
+                    if (d > 1) extenso += dezenas[d] + (u ? " e " : "");
+                    else if (d === 1) extenso += especiais[u] + "";
+                    if (d !== 1 && u) extenso += unidades[u];
+                }
+            }
+
+            extenso += " reais";
+            if (centavos > 0) extenso += " e " + centavos + " centavos";
+            return extenso;
+        }
+
+        function gerarTexto() {
+            const nomeAgente = document.getElementById("nomeAgente").value;
+            const matricula = document.getElementById("matricula").value;
+            const valor = parseFloat(document.getElementById("valor").value.replace(",", "."));
+            const motivo = document.getElementById("motivo").value;
+
+            if (!valor || isNaN(valor)) { alert("Digite um valor válido!"); return; }
+
+            const valorFormatado = formatar(valor);
+            const valorExtenso = numeroPorExtenso(valor);
+
+            const texto =
+                `Senhor(a) ${nomeAgente}, matrícula nº ${matricula},
+
+Servimo-nos do presente rito sumário para notificá-lo(a) acerca da apuração de valor a ser devolvido ao erário, no montante de R$ ${valorFormatado} (${valorExtenso}).
+
+O montante devido decorre do(s) seguinte(s) motivo(s):
+
+${motivo}
+
+O valor poderá ser restituído voluntariamente, conforme os meios estabelecidos no Ato - SEI Nº 52, de 25 de março de 2025. A quitação poderá ocorrer por meio de pagamento único ou parcelamento, conforme as condições descritas na Norma SEI nº 03/2024/DGP-EBSERH.
+
+Ressaltamos que a ausência de manifestação por parte de Vossa Senhoria no prazo de 10 (dez) dias corridos acarretará a instauração de processo administrativo de reposição ao erário e que as dívidas pecuniárias vencidas e não pagas estarão sujeitas à atualização monetária, inscrição no Cadastro Informativo de Créditos não Quitados (Cadin) e cobrança judicial.
+
+Atenciosamente,
+
+Jailson Manoel Silva Duarte
+Analista Administrativo - Contabilidade
+Unidade de Administração de Pessoal – UAP`;
+
+            document.getElementById("resultado").value = texto;
+            document.getElementById("resultadoCard").style.display = "block";
+        }
+
+        function copiar() {
+            const resultado = document.getElementById("resultado");
+            resultado.select();
+            document.execCommand("copy");
+            alert("Texto copiado!");
+        }
+
+        function limpar() {
+            document.getElementById("nomeAgente").value = "";
+            document.getElementById("matricula").value = "";
+            document.getElementById("valor").value = "";
+            document.getElementById("motivo").value = "";
+            document.getElementById("resultado").value = "";
+            document.getElementById("resultadoCard").style.display = "none";
+        }
+    </script>
+</body>
+
+</html>

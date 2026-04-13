@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Licença Maternidade - SIGP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --secondary: #a855f7;
+            --accent: #22d3ee;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--accent), var(--primary-light), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--primary-light);
+        }
+
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 1.5rem;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        .variable-table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            text-align: left;
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .table-input {
+            width: 100px;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-calc {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-calc:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+            filter: brightness(1.1);
+        }
+
+        .results-container {
+            display: none;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .summary-val {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-top: 0.5rem;
+        }
+
+        .monthly-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .month-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .month-card:hover {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .month-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .month-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary-light);
+        }
+
+        .folha-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .val-pos { color: var(--success); }
+        .val-neg { color: var(--danger); }
+
+        .total-box {
+            margin-top: 1rem;
+            padding-top: 0.8rem;
+            border-top: 1px dashed var(--glass-border);
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.8rem; }
+            .glass-card { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <header>
+        <h1>Calculadora de Licença Maternidade</h1>
+        <p class="subtitle">Simulação detalhada baseada no histórico do SIGP / EBSERH</p>
+    </header>
+
+    <div class="glass-card">
+        <div class="section-title">Dados Gerais da Colaboradora</div>
+        <div class="grid-inputs">
+            <div class="input-group">
+                <label for="salario_base">Salário Base (CLT)</label>
+                <input type="number" id="salario_base" value="2000" step="0.01">
+            </div>
+            <div class="input-group">
+                <label for="data_inicio">Início da Licença</label>
+                <input type="date" id="data_inicio" value="2025-06-07">
+            </div>
+            <div class="input-group">
+                <label for="tipo_insalubridade">Insalubridade</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="val_insalubridade_fixo" value="400" step="0.01" style="flex: 1;" placeholder="Valor R$">
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="auxilio_alimentacao">Auxílio Alimentação (Fix)</label>
+                <input type="number" id="auxilio_alimentacao" value="500">
+            </div>
+            <div class="input-group">
+                <label for="ressarcimento_saude">Ressarcimento Saúde (Fix)</label>
+                <input type="number" id="ressarcimento_saude" value="120">
+            </div>
+        </div>
+
+        <div class="section-title">Histórico de Rubricas Variáveis (Últimos 6 meses)</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Informe os valores pagos nos 6 meses que antecedem o início da licença (ex: Dezembro a Maio).
+        </p>
+        
+        <div class="variable-table-container">
+            <table id="variableTable">
+                <thead>
+                    <tr>
+                        <th>Rubricas Consideradas (2025)</th>
+                        <th class="month-label" data-offset="-6">Mês -6</th>
+                        <th class="month-label" data-offset="-5">Mês -5</th>
+                        <th class="month-label" data-offset="-4">Mês -4</th>
+                        <th class="month-label" data-offset="-3">Mês -3</th>
+                        <th class="month-label" data-offset="-2">Mês -2</th>
+                        <th class="month-label" data-offset="-1">Mês -1</th>
+                    </tr>
+                </thead>
+                <tbody id="rubricasBody">
+                    <tr>
+                        <td>Horas Extras 50% (00081)</td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="100"></td>
+                        <td><input type="number" class="table-input" value="150"></td>
+                        <td><input type="number" class="table-input" value="120"></td>
+                        <td><input type="number" class="table-input" value="130"></td>
+                    </tr>
+                    <tr>
+                        <td>Sobreaviso/Prontidão (00300)</td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="300"></td>
+                        <td><input type="number" class="table-input" value="300"></td>
+                        <td><input type="number" class="table-input" value="300"></td>
+                        <td><input type="number" class="table-input" value="300"></td>
+                    </tr>
+                    <tr>
+                        <td>Horas Feriado (82043)</td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="100"></td>
+                        <td><input type="number" class="table-input" value="50"></td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                    </tr>
+                    <tr>
+                        <td>DSR sobre Variáveis (00316)</td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="0"></td>
+                        <td><input type="number" class="table-input" value="50"></td>
+                        <td><input type="number" class="table-input" value="60"></td>
+                        <td><input type="number" class="table-input" value="45"></td>
+                        <td><input type="number" class="table-input" value="55"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <button class="btn-calc" onclick="calcular()">Gerar Relatório de Folhas</button>
+    </div>
+
+    <div class="results-container" id="results">
+        <div class="glass-card">
+            <div class="section-title">Resumo do Cálculo</div>
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <label>Média Variáveis (Σ/6)</label>
+                    <div id="res_media" class="summary-val">R$ 0,00</div>
+                </div>
+                <div class="summary-card">
+                    <label>Salário Maternidade Calculado</label>
+                    <div id="res_sm" class="summary-val" style="color: var(--secondary);">R$ 0,00</div>
+                </div>
+                <div class="summary-card">
+                    <label>Período Total</label>
+                    <div id="res_periodo" class="summary-val" style="font-size: 1.2rem; color: var(--text-main);">180 dias</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">Evolução Mensal da Folha</div>
+        <div class="monthly-breakdown" id="evolutionGrid">
+            <!-- Cards gerados dinamicamente -->
+        </div>
+        
+        <div class="glass-card" style="margin-top: 1rem; border-color: var(--danger);">
+            <p style="font-size: 0.9rem; text-align: center; color: var(--danger); font-weight: 600;">
+                ⚠️ LEMBRETE: O AUXÍLIO TRANSPORTE DEVERÁ SER AJUSTADO MANUALMENTE POIS NÃO ESTÁ PARAMETRIZADO NO SIGP.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const monthsName = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    function formatCurrency(v) {
+        return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function getDaysInMonth(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+    }
+
+    function updateMonthLabels() {
+        const dataIn = new Date(document.getElementById('data_inicio').value);
+        if (isNaN(dataIn)) return;
+        
+        const labels = document.querySelectorAll('.month-label');
+        labels.forEach(lbl => {
+            const offset = parseInt(lbl.dataset.offset);
+            const d = new Date(dataIn.getFullYear(), dataIn.getMonth() + offset, 1);
+            lbl.innerText = `${monthsName[d.getMonth()]}/${d.getFullYear().toString().substring(2)}`;
+        });
+    }
+
+    document.getElementById('data_inicio').addEventListener('change', updateMonthLabels);
+    updateMonthLabels();
+
+    function calcular() {
+        const salarioBase = parseFloat(document.getElementById('salario_base').value) || 0;
+        const valInsalubridade = parseFloat(document.getElementById('val_insalubridade_fixo').value) || 0;
+        const auxAlimentacao = parseFloat(document.getElementById('auxilio_alimentacao').value) || 0;
+        const ressSaude = parseFloat(document.getElementById('ressarcimento_saude').value) || 0;
+        const dataInicioStr = document.getElementById('data_inicio').value;
+
+        if (!dataInicioStr) {
+            alert('Selecione a data de início.');
+            return;
+        }
+
+        // 1. Calcular Média Variáveis
+        const inputs = document.querySelectorAll('.table-input');
+        let totalSoma = 0;
+        inputs.forEach(input => {
+            totalSoma += (parseFloat(input.value) || 0);
+        });
+        const media = totalSoma / 6;
+        
+        // SM = Salário Base + Insalubridade + Média Variáveis
+        const salarioMaternidade = salarioBase + valInsalubridade + media;
+
+        document.getElementById('res_media').innerText = formatCurrency(media);
+        document.getElementById('res_sm').innerText = formatCurrency(salarioMaternidade);
+
+        // 2. Definir Períodos
+        // Licença 120 dias
+        const dInicio = new Date(dataInicioStr + 'T12:00:00');
+        const dFim120 = new Date(dInicio);
+        dFim120.setDate(dInicio.getDate() + 119); // 120 dias contando o início
+
+        // Licença 60 dias (Complementar)
+        const dInicio60 = new Date(dFim120);
+        dInicio60.setDate(dFim120.getDate() + 1);
+        const dFim60 = new Date(dInicio60);
+        dFim60.setDate(dInicio60.getDate() + 59); // 60 dias
+
+        const totalPeriodoStr = `${dInicio.toLocaleDateString()} até ${dFim60.toLocaleDateString()} (180 dias)`;
+        document.getElementById('res_periodo').innerText = totalPeriodoStr;
+
+        // 3. Simulação Mensal (Evolução)
+        const grid = document.getElementById('evolutionGrid');
+        grid.innerHTML = '';
+
+        // Vamos rodar a simulação de meses. 
+        // Segundo o caso, a folha de M verifica o afastamento em M-1.
+        // Simularemos até 2 meses após o fim da licença para ver a normalização.
+        
+        let currentDate = new Date(dInicio.getFullYear(), dInicio.getMonth(), 1);
+        // Queremos começar a mostrar a partir do mês de início da licença.
+        // No exemplo, licença em Junho, folha de Junho é normal.
+        // Então rodamos meses até o fim da licença + delay.
+        
+        const monthsToSimulate = 10; 
+        
+        for (let i = 0; i < monthsToSimulate; i++) {
+            const simulMonth = new Date(dInicio.getFullYear(), dInicio.getMonth() + i, 1);
+            const refMonth = new Date(simulMonth.getFullYear(), simulMonth.getMonth() - 1, 1);
+            
+            // Dias de afastamento no mês de REFERÊNCIA (M-1)
+            let days120 = 0;
+            let days60 = 0;
+            
+            const totalDaysRef = getDaysInMonth(refMonth.getFullYear(), refMonth.getMonth());
+            
+            for (let d = 1; d <= totalDaysRef; d++) {
+                const checkDate = new Date(refMonth.getFullYear(), refMonth.getMonth(), d);
+                if (checkDate >= dInicio && checkDate <= dFim120) {
+                    days120++;
+                } else if (checkDate >= dInicio60 && checkDate <= dFim60) {
+                    days60++;
+                }
+            }
+
+            const totalAfastadoRef = days120 + days60;
+
+            // Renderização da Folha
+            const card = document.createElement('div');
+            card.className = 'month-card';
+            
+            let html = `
+                <div class="month-header">
+                    <span class="month-name">${monthsName[simulMonth.getMonth()]} / ${simulMonth.getFullYear()}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted)">Ref: ${monthsName[refMonth.getMonth()]}</span>
+                </div>
+                <div class="folha-body">
+                    <div class="folha-item"><span>Salário - CLT</span> <span class="val-pos">${formatCurrency(salarioBase)}</span></div>
+                    <div class="folha-item"><span>Adic. Insalubridade</span> <span class="val-pos">${formatCurrency(valInsalubridade)}</span></div>
+            `;
+
+            let descSalario = 0;
+            let descInsalub = 0;
+            let pagSM120 = 0;
+            let pagSM60 = 0;
+
+            if (totalAfastadoRef > 0) {
+                descSalario = (salarioBase / totalDaysRef) * totalAfastadoRef;
+                descInsalub = (valInsalubridade / totalDaysRef) * totalAfastadoRef;
+                pagSM120 = (salarioMaternidade / totalDaysRef) * days120;
+                pagSM60 = (salarioMaternidade / totalDaysRef) * days60;
+
+                html += `<div class="folha-item"><span>Desconto Salário (Afast.)</span> <span class="val-neg">-${formatCurrency(descSalario)}</span></div>`;
+                html += `<div class="folha-item"><span>Desconto Insalub. (Afast.)</span> <span class="val-neg">-${formatCurrency(descInsalub)}</span></div>`;
+                
+                if (pagSM120 > 0) {
+                    html += `<div class="folha-item"><span>SM 120 Dias</span> <span class="val-pos">${formatCurrency(pagSM120)}</span></div>`;
+                }
+                if (pagSM60 > 0) {
+                    html += `<div class="folha-item"><span>SM 60 Dias</span> <span class="val-pos">${formatCurrency(pagSM60)}</span></div>`;
+                }
+            }
+
+            html += `
+                    <div class="folha-item"><span>Auxílio Alimentação</span> <span class="val-pos">${formatCurrency(auxAlimentacao)}</span></div>
+                    <div class="folha-item"><span>Ressarcimento Saúde</span> <span class="val-pos">${formatCurrency(ressSaude)}</span></div>
+                </div>
+            `;
+
+            const total = (salarioBase + valInsalubridade + auxAlimentacao + ressSaude + pagSM120 + pagSM60) - (descSalario + descInsalub);
+            
+            html += `
+                <div class="total-box">
+                    <span>Líquido Estimado</span>
+                    <span>${formatCurrency(total)}</span>
+                </div>
+            `;
+
+            card.innerHTML = html;
+            grid.appendChild(card);
+            
+            // Se já passamos do fim da licença e a folha normalizou, paramos a simulação após 1 mês extra
+            if (simulMonth > dFim60 && totalAfastadoRef === 0) {
+                break;
+            }
+        }
+
+        document.getElementById('results').style.display = 'flex';
+        window.scrollTo({ top: document.getElementById('results').offsetTop - 20, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juntar PDFs | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        .upload-area {
+            background: var(--gray-100);
+            border: 2px dashed var(--ebserh-accent);
+            padding: 3rem;
+            text-align: center;
+            border-radius: var(--radius-lg);
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .upload-area:hover {
+            background: var(--gray-200);
+            border-color: var(--ebserh-blue);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-list {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--gray-200);
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .btn-remove {
+            background: var(--error);
+            color: white;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+
+        #status {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: 600;
+            color: var(--ebserh-accent);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">União de Arquivos PDF</h1>
+                <p class="page-subtitle">Ferramenta para unir múltiplos arquivos PDF em um único documento</p>
+            </header>
+
+            <!-- Upload Card -->
+            <div class="card">
+                <h2 class="card-header">Selecionar Arquivos</h2>
+
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">📎 Clique aqui para selecionar os PDFs</p>
+                    <small style="color: var(--gray-600);">ou arraste-os para cá (Segure CTRL para selecionar vários de
+                        uma vez)</small>
+                    <input type="file" id="fileInput" accept="application/pdf" multiple
+                        onchange="handleFiles(this.files)">
+                </div>
+
+                <div id="fileListArea" class="file-list" style="display: none;">
+                    <div
+                        style="font-weight: bold; margin-bottom: 0.75rem; color: var(--ebserh-blue); border-bottom: 2px solid var(--gray-200); padding-bottom: 0.5rem;">
+                        Arquivos Selecionados:
+                    </div>
+                    <div id="filesContainer"></div>
+                </div>
+
+                <button id="mergeBtn" class="btn btn-success btn-lg btn-block" onclick="mergeAllPDFs()" disabled>
+                    Juntar e Baixar PDF
+                </button>
+
+                <div id="status"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        let pdfFiles = [];
+
+        function handleFiles(files) {
+            const container = document.getElementById('filesContainer');
+            const listArea = document.getElementById('fileListArea');
+
+            for (let file of files) {
+                if (file.type === "application/pdf") {
+                    const fileId = Date.now() + Math.random();
+                    pdfFiles.push({ id: fileId, file: file });
+                }
+            }
+            renderFiles();
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('filesContainer');
+            const listArea = document.getElementById('fileListArea');
+            const mergeBtn = document.getElementById('mergeBtn');
+
+            container.innerHTML = "";
+
+            if (pdfFiles.length > 0) {
+                listArea.style.display = "block";
+                mergeBtn.disabled = pdfFiles.length < 2;
+            } else {
+                listArea.style.display = "none";
+                mergeBtn.disabled = true;
+            }
+
+            pdfFiles.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = `
+                    <span><strong>${index + 1}.</strong> ${item.file.name}</span>
+                    <button class="btn-remove" onclick="removeFile(${item.id})">Remover</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function removeFile(id) {
+            pdfFiles = pdfFiles.filter(f => f.id !== id);
+            renderFiles();
+        }
+
+        async function mergeAllPDFs() {
+            const status = document.getElementById('status');
+            const mergeBtn = document.getElementById('mergeBtn');
+
+            try {
+                status.innerText = "Processando... aguarde.";
+                mergeBtn.disabled = true;
+
+                const mergedPdf = await PDFLib.PDFDocument.create();
+
+                for (let item of pdfFiles) {
+                    const arrayBuffer = await item.file.arrayBuffer();
+                    const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                const pdfBytes = await mergedPdf.save();
+                download(pdfBytes, "PDF_Unido_Final.pdf", "application/pdf");
+
+                status.innerText = "✓ Sucesso! O download começou.";
+                setTimeout(() => status.innerText = "", 5000);
+                mergeBtn.disabled = false;
+
+            } catch (error) {
+                console.error(error);
+                status.innerText = "✗ Erro ao unir PDFs. Verifique se os arquivos não estão protegidos.";
+                mergeBtn.disabled = false;
+            }
+        }
+
+        function download(data, filename, type) {
+            const file = new Blob([data], { type: type });
+            const a = document.createElement("a");
+            const url = URL.createObjectURL(file);
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+        }
+    </script>
+</body>
+
+</html>

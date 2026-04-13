@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Média de Férias | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .calculation-section {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--ebserh-accent);
+        }
+
+        .section-title {
+            color: var(--ebserh-blue);
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .rubric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .rubric-item {
+            background: var(--gray-50);
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .rubric-code {
+            font-weight: 700;
+            color: var(--ebserh-accent);
+            font-size: 0.9rem;
+        }
+
+        .rubric-desc {
+            font-size: 0.85rem;
+            color: var(--gray-700);
+            margin: 0.25rem 0;
+        }
+
+        .rubric-input-wrapper {
+            margin-top: 0.5rem;
+        }
+
+        .formula-display {
+            background: var(--gray-100);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            margin: 1rem 0;
+            border-left: 3px solid var(--ebserh-blue);
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .result-label {
+            font-size: 0.9rem;
+            color: var(--gray-700);
+            margin-bottom: 0.25rem;
+        }
+
+        .result-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+
+        .intermediate-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .intermediate-card {
+            background: var(--gray-100);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora Média de Férias</h1>
+                <p class="page-subtitle">Rubrica 00393 - Férias Média de Variáveis</p>
+            </header>
+
+            <!-- Info Box -->
+            <div class="card"
+                style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 4px solid var(--ebserh-blue);">
+                <h3 style="margin-top: 0; color: var(--ebserh-blue);">📐 Fórmula de Cálculo</h3>
+                <p style="margin: 0.5rem 0;"><strong>Média de Férias = 1º Cálculo + 2º Cálculo + 3º Cálculo</strong></p>
+                <p style="margin: 0.5rem 0; font-size: 0.9rem; color: var(--gray-700);">
+                    <strong>Tipo:</strong> Vencimento/Desconto | <strong>Fator:</strong> 1<br>
+                    <strong>Usada para:</strong> Pagamento referente ao mês 6 | Ajuste Retroativo dentro do Exercício
+                </p>
+            </div>
+
+            <!-- 1º Cálculo - Base 36 -->
+            <div class="calculation-section">
+                <div class="section-title">
+                    <span>1️⃣</span>
+                    <span>1º Cálculo - Média das Rubricas Variáveis (Base 36)</span>
+                </div>
+                <div class="formula-display">
+                    1º Cálculo = Σ Rubricas da base 36 durante período aquisitivo ÷ 12
+                </div>
+
+                <div class="rubric-grid" id="base36-grid"></div>
+            </div>
+
+            <!-- 2º Cálculo - Base 37 -->
+            <div class="calculation-section">
+                <div class="section-title">
+                    <span>2️⃣</span>
+                    <span>2º Cálculo - Média de Gratificações Fixas (Base 37)</span>
+                </div>
+                <div class="formula-display">
+                    Média Base 37 = Σ Rubricas da base 37 durante período aquisitivo ÷ 12<br>
+                    Se Média Base 37 > Base 37 do mês → 2º Cálculo = Média - Base do mês<br>
+                    Se Média Base 37 ≤ Base 37 do mês → 2º Cálculo = R$ 0,00
+                </div>
+
+                <div class="rubric-grid" id="base37-grid"></div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label class="form-label">Base 37 do Mês Atual (R$)</label>
+                    <input type="number" id="base37-mes" class="form-input" value="0" step="0.01" min="0">
+                    <small class="form-help">Valor total da Base 37 na folha de pagamento do mês</small>
+                </div>
+            </div>
+
+            <!-- 3º Cálculo - Base 38 -->
+            <div class="calculation-section">
+                <div class="section-title">
+                    <span>3️⃣</span>
+                    <span>3º Cálculo - Média de Gratificação por Função (Base 38)</span>
+                </div>
+                <div class="formula-display">
+                    Média Base 38 = Σ Rubricas da base 38 durante período aquisitivo ÷ 12<br>
+                    Se Média Base 38 > Base 38 do mês → 3º Cálculo = Média - Base do mês<br>
+                    Se Média Base 38 ≤ Base 38 do mês → 3º Cálculo = R$ 0,00
+                </div>
+
+                <div class="rubric-grid" id="base38-grid"></div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label class="form-label">Base 38 do Mês Atual (R$)</label>
+                    <input type="number" id="base38-mes" class="form-input" value="0" step="0.01" min="0">
+                    <small class="form-help">Valor total da Base 38 na folha de pagamento do mês</small>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card">
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary btn-lg" onclick="calcular()">Calcular Média de Férias</button>
+                    <button id="btnPDF" class="btn btn-danger btn-lg" onclick="exportarPDF()" style="display: none;">📄
+                        Exportar PDF</button>
+                    <button class="btn btn-secondary" onclick="limpar()">Limpar Todos os Campos</button>
+                </div>
+
+                <!-- Results -->
+                <div id="results" style="display: none;">
+                    <div class="intermediate-results">
+                        <div class="intermediate-card">
+                            <div class="result-label">1º Cálculo (Base 36)</div>
+                            <div class="result-value" style="font-size: 1.4rem;" id="calc1">R$ 0,00</div>
+                        </div>
+                        <div class="intermediate-card">
+                            <div class="result-label">2º Cálculo (Base 37)</div>
+                            <div class="result-value" style="font-size: 1.4rem;" id="calc2">R$ 0,00</div>
+                        </div>
+                        <div class="intermediate-card">
+                            <div class="result-label">3º Cálculo (Base 38)</div>
+                            <div class="result-value" style="font-size: 1.4rem;" id="calc3">R$ 0,00</div>
+                        </div>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-label">Média de Férias (Rubrica 00393)</div>
+                        <div class="result-value" id="resultado-final">R$ 0,00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        // Base 36 - Rubricas Variáveis
+        const base36 = [
+            { codigo: '81', descricao: 'ADICIONAL POR SERV. EXTRAORDINARIO-CLT' },
+            { codigo: '300', descricao: 'ADIC. SOBREAVISO/PRONTIDAO/CLT' },
+            { codigo: '316', descricao: 'REPOUSO REMUNERADO DSR' },
+            { codigo: '361', descricao: 'HORAS EXTRAS DIURNAS100% - CLT' },
+            { codigo: '411', descricao: 'ADICIONAL NOTURNO - CLT' },
+            { codigo: '878', descricao: 'HORA EXTRA NOTURNA 50%-CLT' },
+            { codigo: '82043', descricao: 'HORAS FERIADO' }
+        ];
+
+        // Base 37 - Gratificações Fixas
+        const base37 = [
+            { codigo: '35', descricao: 'GRAT. RAIO X - CLT' },
+            { codigo: '64', descricao: 'GRATIFICAÇÃO DE RAIO X' },
+            { codigo: '133', descricao: 'ADICIONAL DE INSALUBRIDADE' },
+            { codigo: '135', descricao: 'ADICIONAL DE PERICULOSIDADE' },
+            { codigo: '137', descricao: 'INSALUBRIDADE SEM VINCULOS' },
+            { codigo: '825', descricao: 'GRATIFICAÇÃO DE RAIO X (Contrato Temporário)' },
+            { codigo: '70137', descricao: 'DESC. INSABULIDRADE SEM VINCULO' },
+            { codigo: '73035', descricao: 'DESC - Gratif. Raio X - CLT' },
+            { codigo: '73053', descricao: 'DESC. ADICIONAL DE INSALUBRIDADE PESSOAL REQUISITADO' },
+            { codigo: '73064', descricao: 'DESC. GRATIFICAÇÃO DE RAIO X' },
+            { codigo: '73133', descricao: 'DESC. ADICIONAL DE INSALUBRIDADE' },
+            { codigo: '82404', descricao: 'ADIC. DE INSALUBRIDADE (Contrato Temporário)' },
+            { codigo: '82405', descricao: 'ADIC. DE PERICULOSIDADE (Contrato Temporário)' }
+        ];
+
+        // Base 38 - Gratificação por Função
+        const base38 = [
+            { codigo: '24', descricao: 'SUBSTITUICAO/INTERINO' },
+            { codigo: '301', descricao: 'GRAT.CARGO COMISSIONADO - CLT' }
+        ];
+
+        function renderRubrics() {
+            // Renderizar Base 36
+            document.getElementById('base36-grid').innerHTML = base36.map(r => `
+                <div class="rubric-item">
+                    <div class="rubric-code">${r.codigo}</div>
+                    <div class="rubric-desc">${r.descricao}</div>
+                    <div class="rubric-input-wrapper">
+                        <input type="number" class="form-input" id="b36-${r.codigo}" 
+                               value="0" step="0.01" min="0" placeholder="Soma no período">
+                    </div>
+                </div>
+            `).join('');
+
+            // Renderizar Base 37
+            document.getElementById('base37-grid').innerHTML = base37.map(r => `
+                <div class="rubric-item">
+                    <div class="rubric-code">${r.codigo}</div>
+                    <div class="rubric-desc">${r.descricao}</div>
+                    <div class="rubric-input-wrapper">
+                        <input type="number" class="form-input" id="b37-${r.codigo}" 
+                               value="0" step="0.01" min="0" placeholder="Soma no período">
+                    </div>
+                </div>
+            `).join('');
+
+            // Renderizar Base 38
+            document.getElementById('base38-grid').innerHTML = base38.map(r => `
+                <div class="rubric-item">
+                    <div class="rubric-code">${r.codigo}</div>
+                    <div class="rubric-desc">${r.descricao}</div>
+                    <div class="rubric-input-wrapper">
+                        <input type="number" class="form-input" id="b38-${r.codigo}" 
+                               value="0" step="0.01" min="0" placeholder="Soma no período">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function calcular() {
+            // 1º Cálculo - Base 36
+            let somaBase36 = 0;
+            base36.forEach(r => {
+                const valor = parseFloat(document.getElementById(`b36-${r.codigo}`).value) || 0;
+                somaBase36 += valor;
+            });
+            const calc1 = somaBase36 / 12;
+
+            // 2º Cálculo - Base 37
+            let somaBase37 = 0;
+            base37.forEach(r => {
+                const valor = parseFloat(document.getElementById(`b37-${r.codigo}`).value) || 0;
+                somaBase37 += valor;
+            });
+            const mediaBase37 = somaBase37 / 12;
+            const base37Mes = parseFloat(document.getElementById('base37-mes').value) || 0;
+            const calc2 = mediaBase37 > base37Mes ? (mediaBase37 - base37Mes) : 0;
+
+            // 3º Cálculo - Base 38
+            let somaBase38 = 0;
+            base38.forEach(r => {
+                const valor = parseFloat(document.getElementById(`b38-${r.codigo}`).value) || 0;
+                somaBase38 += valor;
+            });
+            const mediaBase38 = somaBase38 / 12;
+            const base38Mes = parseFloat(document.getElementById('base38-mes').value) || 0;
+            const calc3 = mediaBase38 > base38Mes ? (mediaBase38 - base38Mes) : 0;
+
+            // Média de Férias Total
+            const mediaFerias = calc1 + calc2 + calc3;
+
+            // Exibir resultados
+            document.getElementById('calc1').innerText = formatMoeda(calc1);
+            document.getElementById('calc2').innerText = formatMoeda(calc2);
+            document.getElementById('calc3').innerText = formatMoeda(calc3);
+            document.getElementById('resultado-final').innerText = formatMoeda(mediaFerias);
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('btnPDF').style.display = 'inline-block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho Ebserh
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Ebserh - Hospital Universitário Lauro Wanderley", 10, 15);
+            doc.setFontSize(14);
+            doc.text("Cálculo de Média de Férias (Rubrica 00393)", 10, 22);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 10, 28);
+
+            let yPos = 35;
+
+            // 1º Cálculo
+            doc.setFont("helvetica", "bold");
+            doc.text("1º Cálculo - Base 36 (Rubricas Variáveis)", 10, yPos);
+            yPos += 5;
+
+            const tableData36 = base36.map(r => {
+                const val = parseFloat(document.getElementById(`b36-${r.codigo}`).value) || 0;
+                return [r.codigo, r.descricao, formatMoeda(val)];
+            }).filter(row => row[2] !== "R$ 0,00");
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Cód', 'Descrição', 'Soma Período']],
+                body: tableData36,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 82, 155] }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 10;
+            const soma36 = tableData36.reduce((acc, current) => acc + parseFloat(current[2].replace(/[^\d,-]/g, '').replace(',', '.')), 0);
+            doc.text(`Total Base 36: ${formatMoeda(soma36)} | Média (Total/12): ${document.getElementById('calc1').innerText}`, 10, yPos);
+            yPos += 10;
+
+            // 2º Cálculo
+            doc.setFont("helvetica", "bold");
+            doc.text("2º Cálculo - Base 37 (Gratificações Fixas)", 10, yPos);
+            yPos += 5;
+
+            const tableData37 = base37.map(r => {
+                const val = parseFloat(document.getElementById(`b37-${r.codigo}`).value) || 0;
+                return [r.codigo, r.descricao, formatMoeda(val)];
+            }).filter(row => row[2] !== "R$ 0,00");
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Cód', 'Descrição', 'Soma Período']],
+                body: tableData37,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 82, 155] }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 10;
+            const media37 = tableData37.reduce((acc, current) => acc + parseFloat(current[2].replace(/[^\d,-]/g, '').replace(',', '.')), 0) / 12;
+            const base37Mes = parseFloat(document.getElementById('base37-mes').value) || 0;
+            doc.text(`Média Base 37: ${formatMoeda(media37)} | Base Mês: ${formatMoeda(base37Mes)}`, 10, yPos);
+            yPos += 5;
+            doc.text(`Resultado 2º Cálculo: ${document.getElementById('calc2').innerText}`, 10, yPos);
+            yPos += 10;
+
+            // 3º Cálculo
+            doc.setFont("helvetica", "bold");
+            doc.text("3º Cálculo - Base 38 (Função)", 10, yPos);
+            yPos += 5;
+
+            const tableData38 = base38.map(r => {
+                const val = parseFloat(document.getElementById(`b38-${r.codigo}`).value) || 0;
+                return [r.codigo, r.descricao, formatMoeda(val)];
+            }).filter(row => row[2] !== "R$ 0,00");
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Cód', 'Descrição', 'Soma Período']],
+                body: tableData38,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 82, 155] }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 10;
+            const media38 = tableData38.reduce((acc, current) => acc + parseFloat(current[2].replace(/[^\d,-]/g, '').replace(',', '.')), 0) / 12;
+            const base38Mes = parseFloat(document.getElementById('base38-mes').value) || 0;
+            doc.text(`Média Base 38: ${formatMoeda(media38)} | Base Mês: ${formatMoeda(base38Mes)}`, 10, yPos);
+            yPos += 5;
+            doc.text(`Resultado 3º Cálculo: ${document.getElementById('calc3').innerText}`, 10, yPos);
+            yPos += 15;
+
+            // Resultado Final
+            doc.setDrawColor(0, 82, 155);
+            doc.setLineWidth(1);
+            doc.rect(10, yPos, 190, 15);
+            doc.setFontSize(14);
+            doc.text(`VALOR TOTAL DA RUBRICA 00393: ${document.getElementById('resultado-final').innerText}`, 15, yPos + 10);
+
+            doc.save("media_ferias_detalhado.pdf");
+        }
+
+        function limpar() {
+            // Limpar Base 36
+            base36.forEach(r => {
+                document.getElementById(`b36-${r.codigo}`).value = '0';
+            });
+
+            // Limpar Base 37
+            base37.forEach(r => {
+                document.getElementById(`b37-${r.codigo}`).value = '0';
+            });
+            document.getElementById('base37-mes').value = '0';
+
+            // Limpar Base 38
+            base38.forEach(r => {
+                document.getElementById(`b38-${r.codigo}`).value = '0';
+            });
+            document.getElementById('base38-mes').value = '0';
+
+            // Esconder resultados
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('btnPDF').style.display = 'none';
+        }
+
+        function formatMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor);
+        }
+
+        // Inicializar
+        renderRubrics();
+    </script>
+</body>
+
+</html>

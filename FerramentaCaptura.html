@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferramenta de Captura | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .instructions-box {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff5d6 100%);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--warning);
+            margin-bottom: 1.5rem;
+        }
+
+        .instructions-box h3 {
+            color: var(--ebserh-blue);
+            margin-bottom: 1rem;
+        }
+
+        .instructions-box ol {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .instructions-box li {
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-container {
+            min-height: 400px;
+            border: 2px dashed var(--gray-300);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gray-50);
+            padding: 2rem;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 500px;
+            box-shadow: var(--shadow-lg);
+            border-radius: var(--radius-sm);
+        }
+
+        .placeholder-text {
+            text-align: center;
+            color: var(--gray-500);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Ferramenta de Captura de Tela</h1>
+                <p class="page-subtitle">Capture qualquer área da tela e salve como PDF</p>
+            </header>
+
+            <!-- Instructions -->
+            <div class="instructions-box">
+                <h3>📋 Como usar:</h3>
+                <ol>
+                    <li>Clique em <strong>"Capturar Tela"</strong> para iniciar</li>
+                    <li>Selecione a tela ou janela que deseja capturar</li>
+                    <li>A captura será exibida na pré-visualização</li>
+                    <li>Clique em <strong>"Salvar como PDF"</strong> para baixar</li>
+                    <li>Use <strong>"Limpar"</strong> para começar novamente</li>
+                </ol>
+                <p style="margin-top: 1rem; color: var(--error); font-weight: 600;">
+                    ⚠️ Importante: O navegador solicitará permissão para capturar a tela. É necessário permitir o
+                    acesso.
+                </p>
+            </div>
+
+            <!-- Controls -->
+            <div class="card">
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button id="start-capture" class="btn btn-primary btn-lg">
+                        📷 Capturar Tela
+                    </button>
+                    <button id="save-pdf" class="btn btn-success btn-lg" disabled>
+                        📄 Salvar como PDF
+                    </button>
+                    <button id="clear-preview" class="btn btn-secondary" disabled>
+                        🗑️ Limpar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="card">
+                <h2 class="card-header">Pré-visualização da Captura</h2>
+                <div class="preview-container" id="preview-container">
+                    <p class="placeholder-text" id="preview-placeholder">
+                        Nenhuma captura realizada ainda.<br>
+                        Clique em "Capturar Tela" para começar.
+                    </p>
+                    <img id="preview-image" style="display: none;">
+                </div>
+                <div id="status-message" style="margin-top: 1rem; text-align: center; font-weight: 600;"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        const startCaptureBtn = document.getElementById('start-capture');
+        const savePdfBtn = document.getElementById('save-pdf');
+        const clearPreviewBtn = document.getElementById('clear-preview');
+        const previewPlaceholder = document.getElementById('preview-placeholder');
+        const previewImage = document.getElementById('preview-image');
+        const statusMessage = document.getElementById('status-message');
+
+        let mediaStream = null;
+        let capturedImage = null;
+
+        startCaptureBtn.addEventListener('click', async () => {
+            try {
+                showStatus('Solicitando permissão para capturar a tela...', 'info');
+
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: 'always' },
+                    audio: false
+                });
+
+                const video = document.createElement('video');
+                video.srcObject = mediaStream;
+                video.autoplay = true;
+
+                video.onloadedmetadata = () => {
+                    setTimeout(() => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(video, 0, 0);
+
+                        capturedImage = canvas.toDataURL('image/png');
+
+                        mediaStream.getTracks().forEach(track => track.stop());
+                        mediaStream = null;
+
+                        showPreview(capturedImage);
+                        showStatus('Captura realizada com sucesso!', 'success');
+
+                        savePdfBtn.disabled = false;
+                        clearPreviewBtn.disabled = false;
+                    }, 500);
+                };
+
+            } catch (error) {
+                console.error('Erro:', error);
+                if (error.name === 'NotAllowedError') {
+                    showStatus('Permissão para capturar a tela foi negada.', 'error');
+                } else {
+                    showStatus(`Erro: ${error.message}`, 'error');
+                }
+            }
+        });
+
+        savePdfBtn.addEventListener('click', () => {
+            if (!capturedImage) return;
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('l', 'mm', 'a4');
+
+            const img = new Image();
+            img.src = capturedImage;
+
+            img.onload = () => {
+                const pw = 297;
+                const ph = pw * (img.height / img.width);
+
+                pdf.addImage(capturedImage, 'PNG', 0, 0, pw, ph);
+                pdf.save('captura_tela.pdf');
+                showStatus('PDF salvo com sucesso!', 'success');
+            };
+        });
+
+        clearPreviewBtn.addEventListener('click', () => {
+            capturedImage = null;
+            previewImage.style.display = 'none';
+            previewPlaceholder.style.display = 'block';
+            savePdfBtn.disabled = true;
+            clearPreviewBtn.disabled = true;
+            showStatus('', '');
+        });
+
+        function showPreview(imageData) {
+            previewImage.src = imageData;
+            previewImage.style.display = 'block';
+            previewPlaceholder.style.display = 'none';
+        }
+
+        function showStatus(message, type) {
+            statusMessage.innerText = message;
+            statusMessage.style.color =
+                type === 'success' ? 'var(--success)' :
+                    type === 'error' ? 'var(--error)' :
+                        type === 'info' ? 'var(--ebserh-accent)' : '';
+        }
+    </script>
+</body>
+
+</html>

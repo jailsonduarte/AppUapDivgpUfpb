@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captura de Tela | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        #container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        video {
+            max-width: 100%;
+            display: block;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+        }
+
+        #overlay {
+            position: absolute;
+            border: 2px dashed var(--error);
+            display: none;
+            pointer-events: none;
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .instructions {
+            background: var(--gray-100);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--ebserh-accent);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Captura de Tela para PDF</h1>
+                <p class="page-subtitle">Selecione uma área da tela e salve como PDF</p>
+            </header>
+
+            <!-- Instructions -->
+            <div class="instructions">
+                <strong>📋 Instruções:</strong>
+                <ol style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
+                    <li>Clique em "Selecionar Tela/Janela" e escolha o que deseja capturar</li>
+                    <li>Arraste o mouse sobre a área que deseja salvar</li>
+                    <li>Clique em "Salvar Área Selecionada em PDF"</li>
+                </ol>
+            </div>
+
+            <!-- Control Card -->
+            <div class="card">
+                <button id="btnTela" class="btn btn-primary btn-lg btn-block">Selecionar Tela/Janela</button>
+
+                <div id="container" style="margin-top: 1.5rem;">
+                    <video id="preview" autoplay></video>
+                    <div id="overlay"></div>
+                </div>
+
+                <button id="btnPrint" class="btn btn-success btn-lg btn-block" style="margin-top: 1.5rem;" disabled>
+                    Salvar Área Selecionada em PDF
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        let stream;
+        let selecting = false;
+        let startX, startY, endX, endY;
+
+        const video = document.getElementById("preview");
+        const overlay = document.getElementById("overlay");
+        const container = document.getElementById("container");
+
+        document.getElementById("btnTela").onclick = async () => {
+            try {
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: "always" }
+                });
+
+                video.srcObject = stream;
+                document.getElementById("btnPrint").disabled = false;
+            } catch (error) {
+                alert("Erro ao capturar tela. Certifique-se de permitir o acesso.");
+            }
+        };
+
+        container.addEventListener("mousedown", (e) => {
+            selecting = true;
+
+            const rect = container.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+
+            overlay.style.left = startX + "px";
+            overlay.style.top = startY + "px";
+            overlay.style.width = "0px";
+            overlay.style.height = "0px";
+            overlay.style.display = "block";
+        });
+
+        container.addEventListener("mousemove", (e) => {
+            if (!selecting) return;
+
+            const rect = container.getBoundingClientRect();
+            endX = e.clientX - rect.left;
+            endY = e.clientY - rect.top;
+
+            overlay.style.width = (endX - startX) + "px";
+            overlay.style.height = (endY - startY) + "px";
+        });
+
+        container.addEventListener("mouseup", () => {
+            selecting = false;
+        });
+
+        document.getElementById("btnPrint").onclick = async () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0);
+
+            const scaleX = video.videoWidth / video.clientWidth;
+            const scaleY = video.videoHeight / video.clientHeight;
+
+            const cropX = startX * scaleX;
+            const cropY = startY * scaleY;
+            const cropW = (endX - startX) * scaleX;
+            const cropH = (endY - startY) * scaleY;
+
+            const cropCanvas = document.createElement("canvas");
+            cropCanvas.width = cropW;
+            cropCanvas.height = cropH;
+            cropCanvas.getContext("2d").drawImage(
+                canvas,
+                cropX, cropY, cropW, cropH,
+                0, 0, cropW, cropH
+            );
+
+            const imgData = cropCanvas.toDataURL("image/png");
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF("l", "mm", "a4");
+
+            const pw = 297;
+            const ph = pw * (cropH / cropW);
+
+            pdf.addImage(imgData, "PNG", 0, 0, pw, ph);
+            pdf.save("area_selecionada.pdf");
+        };
+    </script>
+</body>
+
+</html>

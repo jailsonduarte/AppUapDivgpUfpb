@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora 13º e Férias | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora de 13º Salário e Férias</h1>
+                <p class="page-subtitle">Cálculo de 13º salário com adiantamento e proporcionalidade</p>
+            </header>
+
+            <!-- Salary Base Section -->
+            <div class="card">
+                <h2 class="card-header">Montagem do Salário Base</h2>
+
+                <div class="form-group">
+                    <label class="form-label">Valor</label>
+                    <input type="number" id="entradaValor" class="form-input" placeholder="Digite o valor" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Operação</label>
+                    <select id="tipoOperacao" class="form-select">
+                        <option value="+">Somar (+)</option>
+                        <option value="-">Subtrair (-)</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" onclick="adicionarValor()">Adicionar valor</button>
+
+                <div id="listaValores" class="result-box" style="margin-top: 1rem; display: none;"></div>
+
+                <div class="result-box" style="margin-top: 1rem;">
+                    <div class="result-title">Salário Base Calculado</div>
+                    <div class="result-value">R$ <span id="salarioBase">0,00</span></div>
+                </div>
+
+                <button class="btn btn-danger" onclick="limparTudo()" style="margin-top: 1rem;">Limpar Tudo</button>
+            </div>
+
+            <!-- 13th Salary Calculation -->
+            <div class="card">
+                <h2 class="card-header">Cálculo do 13º Salário</h2>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="chkProporcional" style="width: auto;">
+                        <span>Calcular 13º proporcional</span>
+                    </label>
+                </div>
+
+                <div class="form-group" id="mesesGroup" style="display: none;">
+                    <label class="form-label">Meses Trabalhados</label>
+                    <input type="number" id="meses13" class="form-input" placeholder="Meses trabalhados (1 a 12)"
+                        min="1" max="12">
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="chkAdiantamento" style="width: auto;">
+                        <span>Calcular adiantamento do 13º (1ª parcela)</span>
+                    </label>
+                </div>
+
+                <button class="btn btn-primary btn-lg" onclick="calcularTudo()">Calcular</button>
+            </div>
+
+            <!-- Results -->
+            <div id="resultado" style="display: none;"></div>
+
+            <!-- Export Buttons -->
+            <div id="exportButtons" style="display: none; margin-top: 1.5rem; display: flex; gap: 1rem;">
+                <button class="btn btn-success" onclick="salvarExcel()" style="flex: 1;">Salvar XLSX</button>
+                <button class="btn btn-danger" onclick="salvarPDF()" style="flex: 1;">Salvar PDF</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        // ================= UTIL =================
+        function formatar(v) {
+            return Number(v).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // ================= SALÁRIO BASE =================
+        let salarioBase = 0;
+        let valoresLancados = [];
+
+        function adicionarValor() {
+            const v = parseFloat(entradaValor.value);
+            if (!v || v <= 0) return alert("Informe um valor válido.");
+
+            const op = tipoOperacao.value;
+            salarioBase += (op === "+") ? v : -v;
+
+            valoresLancados.push(`${op} R$ ${formatar(v)}`);
+
+            const listaEl = document.getElementById("listaValores");
+            listaEl.style.display = "block";
+            listaEl.innerHTML =
+                "<div class='result-title'>Valores considerados:</div>" +
+                valoresLancados.join("<br>");
+
+            document.getElementById("salarioBase").innerText = formatar(salarioBase);
+            entradaValor.value = "";
+        }
+
+        // Show/hide months input
+        document.getElementById('chkProporcional').addEventListener('change', function () {
+            document.getElementById('mesesGroup').style.display = this.checked ? 'block' : 'none';
+        });
+
+        // ================= LIMPAR =================
+        function limparTudo() {
+            salarioBase = 0;
+            valoresLancados = [];
+            document.getElementById("listaValores").innerHTML = "";
+            document.getElementById("listaValores").style.display = "none";
+            document.getElementById("salarioBase").innerText = "0,00";
+            document.getElementById("resultado").innerHTML = "";
+            document.getElementById("resultado").style.display = "none";
+            document.getElementById("exportButtons").style.display = "none";
+            document.getElementById("chkProporcional").checked = false;
+            document.getElementById("chkAdiantamento").checked = false;
+            document.getElementById("meses13").value = "";
+            document.getElementById("mesesGroup").style.display = "none";
+        }
+
+        // ================= CÁLCULOS =================
+        let decimo = 0;
+        let adiantamento = 0;
+
+        function calcularTudo() {
+            if (salarioBase <= 0)
+                return alert("Monte o salário base primeiro.");
+
+            let memoria = "";
+
+            // ===== 13º =====
+            if (document.getElementById("chkProporcional").checked) {
+                const meses = parseInt(document.getElementById("meses13").value);
+                if (!meses || meses < 1 || meses > 12)
+                    return alert("Informe corretamente os meses trabalhados.");
+
+                decimo = salarioBase * (meses / 12);
+                memoria += `
+            <div class="result-box">
+                <div class="result-title">13º Salário Proporcional</div>
+                Salário Base: R$ ${formatar(salarioBase)}<br>
+                Meses trabalhados: ${meses}/12<br>
+                Cálculo: ${formatar(salarioBase)} × (${meses} ÷ 12)<br>
+                <div class="result-value" style="margin-top: 0.5rem;">13º Bruto: R$ ${formatar(decimo)}</div>
+            </div>`;
+            } else {
+                decimo = salarioBase;
+                memoria += `
+            <div class="result-box">
+                <div class="result-title">13º Salário Integral</div>
+                Salário Base: R$ ${formatar(salarioBase)}<br>
+                <div class="result-value" style="margin-top: 0.5rem;">13º Bruto: R$ ${formatar(decimo)}</div>
+            </div>`;
+            }
+
+            // ===== ADIANTAMENTO =====
+            if (document.getElementById("chkAdiantamento").checked) {
+                adiantamento = decimo / 2;
+                memoria += `
+            <div class="result-box">
+                <div class="result-title">Adiantamento do 13º</div>
+                1ª Parcela (50%): R$ ${formatar(adiantamento)}<br>
+                Cálculo: ${formatar(decimo)} ÷ 2
+            </div>`;
+            } else {
+                adiantamento = 0;
+            }
+
+            const resultadoEl = document.getElementById("resultado");
+            resultadoEl.innerHTML = memoria;
+            resultadoEl.style.display = "block";
+            document.getElementById("exportButtons").style.display = "flex";
+        }
+
+        // ================= XLSX =================
+        function salvarExcel() {
+            if (decimo <= 0) return alert("Realize algum cálculo primeiro.");
+
+            const dados = [
+                ["Salário Base", salarioBase],
+                ["13º Bruto", decimo],
+            ];
+
+            if (document.getElementById("chkProporcional").checked) {
+                dados.splice(1, 0, ["Meses Trabalhados", document.getElementById("meses13").value]);
+            }
+
+            if (document.getElementById("chkAdiantamento").checked) {
+                dados.push(["Adiantamento 13º (1ª parcela)", adiantamento]);
+            }
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(dados);
+            XLSX.utils.book_append_sheet(wb, ws, "13o_Salario");
+            XLSX.writeFile(wb, "13o_adiantamento.xlsx");
+        }
+
+        // ================= PDF =================
+        function salvarPDF() {
+            if (decimo <= 0) return alert("Realize algum cálculo primeiro.");
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let y = 10;
+
+            doc.text("Memória de Cálculo - 13º Salário", 10, y); y += 10;
+            doc.text("Salário Base: R$ " + formatar(salarioBase), 10, y); y += 10;
+            doc.text("13º Bruto: R$ " + formatar(decimo), 10, y); y += 10;
+
+            if (document.getElementById("chkProporcional").checked) {
+                doc.text("Meses Trabalhados: " + document.getElementById("meses13").value + "/12", 10, y); y += 10;
+            }
+
+            if (document.getElementById("chkAdiantamento").checked) {
+                doc.text("Adiantamento (1ª parcela): R$ " + formatar(adiantamento), 10, y); y += 10;
+            }
+
+            doc.save("13o_adiantamento.pdf");
+        }
+    </script>
+</body>
+
+</html>

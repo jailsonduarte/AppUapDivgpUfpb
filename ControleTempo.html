@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Tempo | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .timer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .timer-display {
+            font-family: 'Courier New', monospace;
+            font-size: 3rem;
+            text-align: center;
+            margin: 1.5rem 0;
+            background: var(--gray-900);
+            color: var(--ebserh-accent);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            font-weight: 700;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .task-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 1rem;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            transition: background var(--transition-base);
+        }
+
+        .task-item:hover {
+            background: var(--gray-50);
+        }
+
+        .task-item.running {
+            background: #fff5eb;
+            border-left: 4px solid var(--ebserh-accent);
+        }
+
+        .task-item.done {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .task-timer {
+            font-family: monospace;
+            font-weight: 700;
+            background: var(--ebserh-blue);
+            color: white;
+            padding: 0.4rem 0.75rem;
+            border-radius: var(--radius-sm);
+        }
+
+        @media (max-width: 768px) {
+            .timer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Controle de Tempo e Tarefas</h1>
+                <p class="page-subtitle">Cronômetro, Pomodoro e gestão de tarefas</p>
+            </header>
+
+            <!-- Timers Grid -->
+            <div class="timer-grid">
+                <!-- Cronômetro -->
+                <div class="card">
+                    <h2 class="card-header">Cronômetro</h2>
+                    <div class="timer-display" id="crono-display">00:00:00</div>
+                    <div class="timer-controls">
+                        <button class="btn btn-success" onclick="startCrono()">Iniciar</button>
+                        <button class="btn btn-secondary" onclick="pauseCrono()">Pausar</button>
+                        <button class="btn btn-danger" onclick="resetCrono()">Zerar</button>
+                    </div>
+                </div>
+
+                <!-- Pomodoro -->
+                <div class="card">
+                    <h2 class="card-header">Pomodoro</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem; justify-content: center;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem;">Foco (min)</label>
+                            <input type="number" id="pomo-foco" class="form-input" value="25"
+                                style="width: 70px; text-align: center;">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" style="font-size: 0.85rem;">Pausa (min)</label>
+                            <input type="number" id="pomo-pausa" class="form-input" value="5"
+                                style="width: 70px; text-align: center;">
+                        </div>
+                    </div>
+                    <div class="timer-display" id="pomo-display">25:00</div>
+                    <div class="timer-controls">
+                        <button class="btn btn-success" onclick="startPomo()">Focar</button>
+                        <button class="btn btn-secondary" onclick="pausePomo()">Pausar</button>
+                        <button class="btn btn-danger" onclick="resetPomo()">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks -->
+            <div class="card">
+                <h2 class="card-header">
+                    Tarefas do Dia
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-warning btn-sm" onclick="deleteActiveTask()">Excluir Ativa</button>
+                        <button class="btn btn-danger btn-sm" onclick="limparTarefas()">Limpar Tudo</button>
+                    </div>
+                </h2>
+
+                <div class="form-row" style="margin-bottom: 1.5rem;">
+                    <div class="form-group" style="flex: 1; margin: 0;">
+                        <input type="text" id="task-name" class="form-input"
+                            placeholder="Digite a tarefa e aperte Adicionar...">
+                    </div>
+                    <button class="btn btn-primary" onclick="addTask()">Adicionar</button>
+                </div>
+
+                <div id="task-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        // CRONÔMETRO
+        let cronoInterval;
+        let cronoSec = 0;
+
+        function startCrono() {
+            if (cronoInterval) return;
+            cronoInterval = setInterval(() => {
+                cronoSec++;
+                updateCronoDisplay();
+            }, 1000);
+        }
+
+        function pauseCrono() {
+            clearInterval(cronoInterval);
+            cronoInterval = null;
+        }
+
+        function resetCrono() {
+            pauseCrono();
+            cronoSec = 0;
+            updateCronoDisplay();
+        }
+
+        function updateCronoDisplay() {
+            const h = Math.floor(cronoSec / 3600);
+            const m = Math.floor((cronoSec % 3600) / 60);
+            const s = cronoSec % 60;
+            document.getElementById('crono-display').innerText =
+                `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        // POMODORO
+        let pomoInterval;
+        let pomoSec = 25 * 60;
+        let pomoMode = 'foco';
+
+        function startPomo() {
+            if (pomoInterval) return;
+            pomoInterval = setInterval(() => {
+                if (pomoSec > 0) {
+                    pomoSec--;
+                    updatePomoDisplay();
+                } else {
+                    pausePomo();
+                    alert(pomoMode === 'foco' ? 'Tempo de pausa!' : 'Voltar ao foco!');
+                    pomoMode = pomoMode === 'foco' ? 'pausa' : 'foco';
+                    pomoSec = pomoMode === 'foco' ?
+                        parseInt(document.getElementById('pomo-foco').value) * 60 :
+                        parseInt(document.getElementById('pomo-pausa').value) * 60;
+                    updatePomoDisplay();
+                }
+            }, 1000);
+        }
+
+        function pausePomo() {
+            clearInterval(pomoInterval);
+            pomoInterval = null;
+        }
+
+        function resetPomo() {
+            pausePomo();
+            pomoMode = 'foco';
+            pomoSec = parseInt(document.getElementById('pomo-foco').value) * 60;
+            updatePomoDisplay();
+        }
+
+        function updatePomoDisplay() {
+            const m = Math.floor(pomoSec / 60);
+            const s = pomoSec % 60;
+            document.getElementById('pomo-display').innerText =
+                `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        // TAREFAS
+        let tasks = JSON.parse(localStorage.getItem('tasks_uap')) || [];
+        let taskIntervals = {};
+
+        function addTask() {
+            const name = document.getElementById('task-name').value.trim();
+            if (!name) return alert('Digite uma tarefa');
+
+            tasks.push({ id: Date.now(), name, time: 0, running: false, done: false });
+            saveTasks();
+            renderTasks();
+            document.getElementById('task-name').value = '';
+        }
+
+        function toggleTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            task.running = !task.running;
+
+            if (task.running) {
+                taskIntervals[id] = setInterval(() => {
+                    task.time++;
+                    saveTasks();
+                    renderTasks();
+                }, 1000);
+            } else {
+                clearInterval(taskIntervals[id]);
+            }
+
+            saveTasks();
+            renderTasks();
+        }
+
+        function markDone(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.done = !task.done;
+                if (task.running) toggleTask(id);
+                saveTasks();
+                renderTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            if (taskIntervals[id]) clearInterval(taskIntervals[id]);
+            tasks = tasks.filter(t => t.id !== id);
+            saveTasks();
+            renderTasks();
+        }
+
+        function deleteActiveTask() {
+            const activeTask = tasks.find(t => t.running);
+            if (!activeTask) {
+                alert('Nenhuma tarefa ativa no momento.');
+                return;
+            }
+
+            if (confirm(`Excluir a tarefa ativa: "${activeTask.name}"?`)) {
+                deleteTask(activeTask.id);
+            }
+        }
+
+        function limparTarefas() {
+            if (!confirm('Limpar todas as tarefas?')) return;
+            Object.values(taskIntervals).forEach(clearInterval);
+            tasks = [];
+            taskIntervals = {};
+            saveTasks();
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('task-list');
+            if (tasks.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: var(--gray-500); padding: 2rem;">Nenhuma tarefa adicionada</p>';
+                return;
+            }
+
+            list.innerHTML = tasks.map(t => {
+                const h = Math.floor(t.time / 3600);
+                const m = Math.floor((t.time % 3600) / 60);
+                const s = t.time % 60;
+                const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+                return `
+                    <div class="task-item ${t.running ? 'running' : ''} ${t.done ? 'done' : ''}">
+                        <span>${t.name}</span>
+                        <span class="task-timer">${timeStr}</span>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-sm ${t.running ? 'btn-secondary' : 'btn-success'}" onclick="toggleTask(${t.id})">
+                                ${t.running ? 'Pausar' : 'Iniciar'}
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="markDone(${t.id})">
+                                ${t.done ? 'Desfazer' : 'Concluir'}
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})">×</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function saveTasks() {
+            localStorage.setItem('tasks_uap', JSON.stringify(tasks));
+        }
+
+        // Inicializar
+        renderTasks();
+        updateCronoDisplay();
+        updatePomoDisplay();
+    </script>
+</body>
+
+</html>

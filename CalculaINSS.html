@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora INSS 2026 | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Simulador INSS 2026</h1>
+                <p class="page-subtitle">Cálculo de contribuição INSS com tabela progressiva atualizada</p>
+            </header>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2 class="card-header">Fontes de Renda Mensal</h2>
+
+                <div id="income-list">
+                    <div class="form-row">
+                        <input type="text" class="form-input" placeholder="Ex: Salário Base" value="Salário Base">
+                        <input type="number" class="form-input val-input" value="5923.21" step="0.01">
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary btn-sm" onclick="addRow()" style="margin-top: 1rem;">
+                    + Adicionar Outro Rendimento
+                </button>
+
+                <button class="btn btn-primary btn-block btn-lg" onclick="calcularINSS()" style="margin-top: 1.5rem;">
+                    CALCULAR E DETALHAR MEMÓRIA
+                </button>
+            </div>
+
+            <!-- Results Area -->
+            <div id="result-area" class="result-section" style="display: none;">
+                <h3 id="memo-title" style="color: var(--ebserh-blue); margin-bottom: 1.5rem; font-size: 1.5rem;">
+                    Decomposição do Cálculo (Método Progressivo)
+                </h3>
+
+                <div id="steps-output"></div>
+
+                <div id="total-result">
+                    <div class="total-banner">
+                        <span class="total-label">Total do Desconto INSS 2026</span>
+                        <strong id="final-val" class="total-value">R$ 0,00</strong>
+                    </div>
+                    <p style="text-align: center; font-size: 0.95rem; color: var(--gray-600); margin-top: 1rem;">
+                        Alíquota Efetiva: <strong id="eff-rate">0%</strong>
+                    </p>
+                    <button class="btn btn-danger btn-block" id="pdf-btn" onclick="gerarPDF()"
+                        style="margin-top: 1.5rem;">
+                        SALVAR RELATÓRIO EM PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        function addRow() {
+            const div = document.createElement('div');
+            div.className = 'form-row';
+            div.innerHTML = '<input type="text" class="form-input" placeholder="Origem"> <input type="number" class="form-input val-input" value="0" step="0.01">';
+            document.getElementById('income-list').appendChild(div);
+        }
+
+        function fmt(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+        function calcularINSS() {
+            let totalBruto = 0;
+            document.querySelectorAll('.val-input').forEach(i => totalBruto += parseFloat(i.value || 0));
+
+            const TETO = 8475.55;
+            const valorBase = Math.min(totalBruto, TETO);
+
+            // Tabela Oficial 2026
+            const faixas = [
+                { max: 1621.00, aliq: 0.075 },
+                { max: 2902.84, aliq: 0.09 },
+                { max: 4354.27, aliq: 0.12 },
+                { max: 8475.55, aliq: 0.14 }
+            ];
+
+            let impostoTotal = 0;
+            let anterior = 0;
+            let html = "";
+
+            faixas.forEach((f, i) => {
+                if (valorBase > anterior) {
+                    let tetoFaixa = Math.min(valorBase, f.max);
+                    let baseNaFaixa = tetoFaixa - anterior;
+                    let valorFaixa = baseNaFaixa * f.aliq;
+                    impostoTotal += valorFaixa;
+
+                    html += `
+                    <div class="result-box">
+                        <div class="result-title">FAIXA ${i + 1} - Alíquota de ${(f.aliq * 100).toFixed(1)}%</div>
+                        Cálculo sobre o intervalo de ${fmt(anterior)} até ${fmt(tetoFaixa)}:<br>
+                        <div class="result-value" style="margin-top: 0.5rem;">
+                            ${fmt(baseNaFaixa)} × ${(f.aliq * 100).toFixed(1)}% = ${fmt(valorFaixa)}
+                        </div>
+                    </div>
+                `;
+                    anterior = f.max;
+                }
+            });
+
+            document.getElementById('steps-output').innerHTML = html;
+            document.getElementById('final-val').innerText = fmt(impostoTotal);
+            document.getElementById('eff-rate').innerText = ((impostoTotal / totalBruto) * 100).toFixed(2) + "%";
+
+            document.getElementById('result-area').style.display = 'block';
+        }
+
+        async function gerarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const element = document.querySelector('.content-wrapper');
+            const btnPdf = document.getElementById('pdf-btn');
+
+            btnPdf.style.display = 'none';
+
+            html2canvas(element, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                doc.save("Memoria_Calculo_INSS_2026.pdf");
+                btnPdf.style.display = 'block';
+            });
+        }
+    </script>
+</body>
+
+</html>

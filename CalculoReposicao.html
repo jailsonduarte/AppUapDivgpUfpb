@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cálculo de Ressarcimento | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .table-container {
+            overflow-x: auto;
+            margin-top: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        th {
+            background: var(--gray-100);
+            font-weight: 700;
+            color: var(--ebserh-blue);
+        }
+
+        td input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+        }
+
+        td input:disabled {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Demonstrativo de Ressarcimento</h1>
+                <p class="page-subtitle">Cálculo de ressarcimento de assistência à saúde</p>
+            </header>
+
+            <!-- Server Info Card -->
+            <div class="card">
+                <h2 class="card-header">Dados do Servidor</h2>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label">Nome do Servidor</label>
+                        <input type="text" id="nome" class="form-input" placeholder="Ex: Marcos Eyder">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Matrícula</label>
+                        <input type="text" id="matricula" class="form-input" placeholder="Ex: 1001954">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nº Dependentes</label>
+                        <input type="number" id="dependentes" class="form-input" min="0" max="10">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="novaLinha()">Adicionar Linha</button>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card">
+                <h2 class="card-header">Competências e Valores</h2>
+
+                <div class="table-container">
+                    <table id="tabela">
+                        <thead>
+                            <tr>
+                                <th>Competência</th>
+                                <th>Valor do Plano</th>
+                                <th>50% Plano</th>
+                                <th>Valor Recebido</th>
+                                <th>Valor a Devolver</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Total -->
+            <div class="total-banner">
+                <span class="total-label">Valor Total a ser Devolvido</span>
+                <strong id="total" class="total-value">R$ 0,00</strong>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-success" onclick="salvarExcel()" style="flex: 1;">📊 Salvar XLSX</button>
+                <button class="btn btn-danger" onclick="salvarPDF()" style="flex: 1;">📄 Salvar PDF</button>
+                <button class="btn btn-secondary" onclick="limparTudo()" style="flex: 1;">🧹 Limpar Tudo</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        function formatar(valor) {
+            return valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+        }
+
+        function desf(valor) {
+            return parseFloat(valor.replace(".", "").replace(",", "."));
+        }
+
+        function novaLinha() {
+            let tabela = document.querySelector("#tabela tbody");
+            let linha = document.createElement("tr");
+
+            linha.innerHTML = `
+            <td><input type="text" placeholder="jan/2023 - Titular"></td>
+            <td><input type="text" value="0,00" onkeyup="calcular()"></td>
+            <td><input type="text" disabled value="0,00"></td>
+            <td><input type="text" value="0,00" onkeyup="calcular()"></td>
+            <td><input type="text" disabled value="0,00"></td>
+        `;
+
+            tabela.appendChild(linha);
+        }
+
+        function calcular() {
+            let linhas = document.querySelectorAll("#tabela tbody tr");
+            let somaFinal = 0;
+
+            linhas.forEach(linha => {
+                let valorPlano = desf(linha.children[1].children[0].value || "0");
+                let cinquenta = valorPlano * 0.5;
+                let recebido = desf(linha.children[3].children[0].value || "0");
+                let devolver = recebido - cinquenta;
+
+                linha.children[2].children[0].value = formatar(cinquenta);
+                linha.children[4].children[0].value = formatar(devolver);
+
+                somaFinal += devolver;
+            });
+
+            document.getElementById("total").innerHTML = "R$ " + formatar(somaFinal);
+        }
+
+        /* ========= SALVAR EM XLSX ========= */
+        function salvarExcel() {
+            let linhas = document.querySelectorAll("#tabela tbody tr");
+
+            if (linhas.length === 0) {
+                alert("Nenhuma linha para salvar!");
+                return;
+            }
+
+            let dados = [
+                ["Competência", "Valor do Plano", "50% Plano", "Valor Recebido", "Valor a Devolver"]
+            ];
+
+            linhas.forEach(linha => {
+                let comp = linha.children[0].children[0].value;
+                let valPlano = linha.children[1].children[0].value;
+                let cinquenta = linha.children[2].children[0].value;
+                let recebido = linha.children[3].children[0].value;
+                let devolver = linha.children[4].children[0].value;
+
+                dados.push([comp, valPlano, cinquenta, recebido, devolver]);
+            });
+
+            let wb = XLSX.utils.book_new();
+            let ws = XLSX.utils.aoa_to_sheet(dados);
+            XLSX.utils.book_append_sheet(wb, ws, "Ressarcimento");
+
+            XLSX.writeFile(wb, "ressarcimento.xlsx");
+        }
+
+        /* ========= SALVAR EM PDF ========= */
+        function salvarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cabeçalho Ebserh
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Ebserh - Hospital Universitário Lauro Wanderley", 10, 15);
+            doc.setFontSize(14);
+            doc.text("Demonstrativo de Reposição ao Erário", 10, 22);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, 10, 28);
+
+            doc.setFontSize(12);
+            doc.text("Servidor: " + document.getElementById("nome").value, 10, 35);
+            doc.text("Matrícula: " + document.getElementById("matricula").value, 10, 42);
+            doc.text("Dependentes: " + document.getElementById("dependentes").value, 10, 49);
+
+            let data = [];
+            let linhas = document.querySelectorAll("#tabela tbody tr");
+
+            linhas.forEach(linha => {
+                const cols = linha.querySelectorAll("input");
+                data.push([
+                    cols[0].value,
+                    cols[1].value,
+                    cols[2].value,
+                    cols[3].value,
+                    cols[4].value
+                ]);
+            });
+
+            doc.autoTable({
+                startY: 55,
+                head: [["Competência", "Plano (R$)", "50% (R$)", "Recebido (R$)", "Devolver (R$)"]],
+                body: data,
+                theme: "grid",
+                headStyles: { fillColor: [0, 82, 155] }
+            });
+
+            let fimTabela = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("TOTAL A DEVOLVER: " + document.getElementById("total").innerText, 10, fimTabela);
+
+            doc.save("reposicao_ao_erario.pdf");
+        }
+
+        /* ========= LIMPAR TUDO ========= */
+        function limparTudo() {
+            if (!confirm("Deseja realmente limpar tudo?")) return;
+
+            document.getElementById("nome").value = "";
+            document.getElementById("matricula").value = "";
+            document.getElementById("dependentes").value = "";
+            document.querySelector("#tabela tbody").innerHTML = "";
+            document.getElementById("total").innerHTML = "R$ 0,00";
+        }
+    </script>
+</body>
+
+</html>

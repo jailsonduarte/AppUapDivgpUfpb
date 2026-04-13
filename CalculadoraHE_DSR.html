@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Hora Extra + DSR | UAP/Divgp - Ebserh HULW</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+    <!-- Navigation Container -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper" id="capture-area">
+            <!-- Page Header -->
+            <header class="page-header">
+                <h1 class="page-title">Calculadora Hora Extra + DSR</h1>
+                <p class="page-subtitle">Cálculo de horas extras 50%/100% e incidência de Descanso Semanal Remunerado
+                </p>
+            </header>
+
+            <!-- Input Card -->
+            <div class="card">
+                <h2 class="card-header">Dados para o Cálculo</h2>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Salário Base (R$)</label>
+                        <input type="number" id="salario" class="form-input" value="3000.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Carga Horária Mensal</label>
+                        <select id="carga-horaria" class="form-input">
+                            <option value="220">220 horas</option>
+                            <option value="200">200 horas</option>
+                            <option value="180">180 horas</option>
+                            <option value="150">150 horas</option>
+                            <option value="120">120 horas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Horas Extras 50% (Qtd)</label>
+                        <input type="number" id="qtd-50" class="form-input" value="10" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Horas Extras 100% (Qtd)</label>
+                        <input type="number" id="qtd-100" class="form-input" value="0" step="0.1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Dias Úteis no Mês</label>
+                        <input type="number" id="dias-uteis" class="form-input" value="24">
+                        <small class="form-help">Segunda a Sábado (exceto feriados)</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DSR (Domingos e Feriados)</label>
+                        <input type="number" id="dias-dsr" class="form-input" value="6">
+                        <small class="form-help">Total de dias de descanso no mês</small>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block btn-lg" onclick="calcularHE()">
+                    CALCULAR VALORES E DETALHAR
+                </button>
+            </div>
+
+            <!-- Results Area -->
+            <div id="result-area" style="display: none;">
+                <h3 style="text-align: center; color: var(--ebserh-blue); margin: 2rem 0 1.5rem;">
+                    MEMÓRIA DE CÁLCULO DETALHADA
+                </h3>
+
+                <div id="step-by-step" class="accordion-container"></div>
+
+                <div class="total-banner">
+                    <span class="total-label">TOTAL BRUTO (HE + DSR)</span>
+                    <span id="final-total" class="total-value">R$ 0,00</span>
+                </div>
+
+                <button class="btn btn-danger btn-block" onclick="baixarPDF()" style="margin-top: 2rem;">
+                    SALVAR RELATÓRIO EM PDF
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+
+    <script>
+        function fmt(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+            if (content.style.display === 'block') {
+                content.style.display = 'none';
+                icon.innerText = '▼';
+            } else {
+                content.style.display = 'block';
+                icon.innerText = '▲';
+            }
+        }
+
+        function calcularHE() {
+            const salario = parseFloat(document.getElementById('salario').value || 0);
+            const carga = parseInt(document.getElementById('carga-horaria').value);
+            const qtd50 = parseFloat(document.getElementById('qtd-50').value || 0);
+            const qtd100 = parseFloat(document.getElementById('qtd-100').value || 0);
+            const uteis = parseInt(document.getElementById('dias-uteis').value || 1);
+            const dsrDays = parseInt(document.getElementById('dias-dsr').value || 0);
+
+            // 1. Valor Hora
+            const valorHora = salario / carga;
+
+            // 2. Valores HE
+            const vHE50 = valorHora * 1.5;
+            const vHE100 = valorHora * 2.0;
+
+            const total50 = vHE50 * qtd50;
+            const total100 = vHE100 * qtd100;
+            const totalHE = total50 + total100;
+
+            // 3. DSR
+            const valorDSR = (totalHE / uteis) * dsrDays;
+            const totalBruto = totalHE + valorDSR;
+
+            // Renderização
+            const container = document.getElementById('step-by-step');
+            container.innerHTML = `
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 1: Valor da Hora Comum</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Salário Base: ${fmt(salario)} / Carga Mensal: ${carga}h<br>
+                        <div class="res-highlight">Valor Hora Normal = ${fmt(valorHora)}</div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 2: Horas Extras (50% e 100%)</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        <strong>Adicional 50%:</strong> ${fmt(vHE50)}/hora x ${qtd50}h = ${fmt(total50)}<br>
+                        <strong>Adicional 100%:</strong> ${fmt(vHE100)}/hora x ${qtd100}h = ${fmt(total100)}<br>
+                        <div class="res-highlight">Subtotal Horas Extras = ${fmt(totalHE)}</div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Etapa 3: Reflexo DSR</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Fórmula: (Total HE / Dias Úteis) x Domingos/Feriados<br>
+                        Cálculo: (${fmt(totalHE)} / ${uteis}) x ${dsrDays}<br>
+                        <div class="res-highlight">Valor do DSR = ${fmt(valorDSR)}</div>
+                    </div>
+                </div>
+
+                <div class="accordion-item" style="border-left-color: var(--success);">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Finalização: Remuneração Total</span>
+                        <span class="accordion-icon">▲</span>
+                    </div>
+                    <div class="accordion-content" style="display: block;">
+                        Subtotal HE (${fmt(totalHE)}) + Reflexo DSR (${fmt(valorDSR)})
+                        <div class="res-highlight" style="color: var(--success); font-size: 1.25rem;">Total a Receber = ${fmt(totalBruto)}</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('final-total').innerText = fmt(totalBruto);
+            document.getElementById('result-area').style.display = 'block';
+        }
+
+        function baixarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const area = document.getElementById('capture-area');
+
+            html2canvas(area, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 190;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                doc.save("Relatorio_HE_DSR.pdf");
+            });
+        }
+    </script>
+</body>
+
+</html>
